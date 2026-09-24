@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heroku Userbot. Handbook</title>
+<meta name="description" content="Heroku Userbot handbook: installation, commands, Python evaluation, the reply object, modules, beta and dev branches.">
+<link rel="icon" type="image/webp" href="https://github.com/hikariatama/assets/raw/master/1326-command-window-line-flat.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root[data-theme="dark"]{
+  --bg:#141218; --panel:#211f26; --panel2:#2b2930;
+  --text:#e6e0e9; --mut:#cac4d0; --faint:#a29ca8;
+  --line:#49454f; --line2:#625d67;
+  --acc:#d0bcff; --acc-dim:#9580c7; --on-acc:#381e72;
+  --ok:#a6dfb3; --bad:#ffb4ab; --warn:#f1d497;
+  --code:#1d1b20; --code-line:#49454f;
+}
+:root[data-theme="light"]{
+  --bg:#fef7ff; --panel:#f3edf7; --panel2:#ece6f0;
+  --text:#1d1b20; --mut:#49454f; --faint:#625d67;
+  --line:#cac4d0; --line2:#938f99;
+  --acc:#6750a4; --acc-dim:#806bb3; --on-acc:#fff;
+  --ok:#166534; --bad:#b3261e; --warn:#8a5600;
+  --code:#f3edf7; --code-line:#cac4d0;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font:16px/1.68 Onest,"Segoe UI",Arial,sans-serif;
+  transition:background .25s,color .25s;
+}
+h1,h2,h3,h4,.lead,nav,.tt{font-family:Onest,"Segoe UI",Arial,sans-serif}
+code,kbd,pre,.mono{font-family:ui-monospace,"Cascadia Code","JetBrains Mono",Consolas,monospace}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:var(--acc);color:var(--on-acc)}
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-thumb{background:var(--line2);border-radius:9px}
+
+header{
+  position:fixed;inset:0 0 auto;height:58px;z-index:40;
+  display:flex;align-items:center;gap:12px;padding:0 16px;
+  background:color-mix(in srgb,var(--panel) 92%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+}
+.logo-plate{
+  width:36px;height:36px;flex:none;overflow:hidden;
+  display:grid;place-items:center;
+}
+.logo-plate img{width:100%;height:100%;display:block;object-fit:contain}
+:root[data-theme="light"] .logo-plate img,:root[data-theme="light"] .hero .plate img{filter:brightness(.72) saturate(1.25)}
+.tt{font-size:17px;font-weight:700;letter-spacing:.2px}
+.tt small{display:block;font-size:11px;color:var(--mut);font-weight:400;letter-spacing:.4px}
+.grow{flex:1}
+.branch-note{font-size:12px;color:var(--mut);white-space:nowrap}
+.branch-note b{color:var(--text)}
+.langs{display:flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px;font-size:12px;font-weight:700}
+.langs a{padding:4px 9px;border-radius:999px;color:var(--mut)}
+.langs a:hover{text-decoration:none;color:var(--text)}
+.langs a.active{color:var(--on-acc);background:var(--acc)}
+.ico{width:38px;height:38px;border:0;border-radius:8px;background:none;color:var(--mut);cursor:pointer;display:grid;place-items:center;transition:.15s}
+.ico:hover{background:var(--panel2);color:var(--text)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+.ico svg{width:19px;height:19px;fill:currentColor}
+
+.wrap{display:flex;padding-top:58px;min-height:100vh}
+nav{
+  width:250px;flex:none;position:sticky;top:58px;align-self:flex-start;
+  height:calc(100vh - 58px);overflow-y:auto;padding:22px 14px 50px;
+  border-right:1px solid var(--line);font-size:14.5px;
+}
+nav .grp{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--faint);margin:20px 10px 6px}
+nav a{display:block;padding:8px 14px;margin:2px 0;border-radius:999px;color:var(--mut);transition:.18s}
+nav a.sub{padding:4px 14px 4px 25px;font-size:13px;color:var(--faint)}
+nav a:hover{color:var(--text);background:var(--panel2);text-decoration:none}
+nav a.on{color:var(--acc);background:color-mix(in srgb,var(--acc) 17%,var(--panel))}
+#nav details{border:0;background:transparent;margin:0;padding:0}
+#nav summary{font-size:12px;color:var(--faint);font-weight:600;padding:5px 14px;cursor:pointer;border-radius:8px}
+#nav summary:hover{color:var(--text);background:var(--panel2)}
+#nav summary::after{content:"⌄";font-size:15px;transform:none;transition:transform .2s}
+#nav details[open] summary::after{transform:rotate(180deg)}
+main{flex:1;min-width:0;padding:40px 34px 120px}
+.page{max-width:780px;margin:0 auto}
+
+section{display:none}
+section.on{display:block;animation:in .28s ease both}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){section.on{animation:none}}
+
+h1{font-size:36px;line-height:1.18;margin:0 0 14px;font-weight:700;letter-spacing:-.02em}
+.lead{font-size:18px;color:var(--mut);margin:0 0 20px;line-height:1.6}
+h2{font-size:24px;font-weight:700;margin:42px 0 12px}
+h2[id]{scroll-margin-top:78px}
+h3{font-size:17px;font-weight:600;margin:26px 0 8px}
+p{margin:12px 0}
+ul,ol{padding-left:22px;margin:12px 0}
+li{margin:6px 0}
+li::marker{color:var(--acc-dim)}
+hr{border:0;border-top:1px solid var(--line);margin:40px 0}
+.toTop{font-size:13px;color:var(--faint)}
+.toTop:hover{color:var(--acc)}
+.jumps{display:flex;flex-wrap:wrap;gap:7px 14px;margin:18px 0 26px;font-size:14px}
+.jumps a{border-bottom:1px solid var(--line2);padding-bottom:1px}
+.subnav{display:flex;flex-wrap:wrap;gap:8px 16px;margin:18px 0 27px;font-size:14px}
+.subnav a{border-bottom:1px solid var(--line2);padding-bottom:2px}
+
+blockquote{
+  margin:16px 0;padding:12px 16px;border-left:3px solid var(--acc-dim);
+  background:var(--panel);border-radius:0 12px 12px 0;color:var(--text);
+}
+blockquote p{margin:6px 0}
+blockquote .bt{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--acc);display:block;margin-bottom:4px}
+blockquote.red{border-left-color:var(--bad)}
+blockquote.red .bt{color:var(--bad)}
+blockquote.green{border-left-color:var(--ok)}
+blockquote.green .bt{color:var(--ok)}
+
+.codetop{
+  display:flex;align-items:center;justify-content:space-between;margin:16px 0 -8px;
+  font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);
+  font-family:Onest,"Segoe UI",Arial,sans-serif;
+}
+pre{
+  background:var(--code);border:1px solid var(--code-line);border-radius:10px;
+  padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.6;margin:12px 0;
+}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+code{background:var(--code);border:1px solid var(--code-line);border-radius:5px;padding:1px 5px;font-size:.86em;color:var(--text)}
+.cp{border:1px solid var(--line2);background:var(--panel);color:var(--mut);border-radius:7px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Onest,"Segoe UI",Arial,sans-serif;transition:.15s}
+.cp:hover{color:var(--text);border-color:var(--acc-dim)}
+.cp.ok{color:var(--ok);border-color:var(--ok)}
+
+.tw{overflow-x:auto;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{text-align:left;padding:9px 12px;font-weight:600;color:var(--mut);border-bottom:2px solid var(--line2);font-size:12px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td code{white-space:nowrap}
+
+details{border:1px solid var(--line);border-radius:16px;margin:10px 0;background:var(--panel)}
+summary{cursor:pointer;padding:13px 16px;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";float:right;color:var(--acc);font-family:Onest,sans-serif;font-size:19px;line-height:1}
+details[open] summary::after{content:"–"}
+details[open]{border-color:var(--line2)}
+details .b{padding:0 16px 14px;animation:in .2s ease both}
+details .b>:first-child{margin-top:0}
+details .b>:last-child{margin-bottom:0}
+
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:680px){.pc{grid-template-columns:1fr}}
+.pc>div{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.pc h4{margin:0 0 8px;font-size:14px;letter-spacing:.5px;text-transform:uppercase}
+.pc .plus h4{color:var(--ok)}
+.pc .minus h4{color:var(--bad)}
+.pc ul{margin:0;padding-left:19px}
+.pc li{margin:5px 0;font-size:14.5px}
+
+.hero{display:flex;gap:22px;align-items:flex-start;margin:6px 0 26px}
+.hero .plate{width:88px;height:88px;flex:none;display:grid;place-items:center;overflow:hidden}
+.hero .plate img{width:100%;height:100%;object-fit:contain}
+.hero .lead{margin:4px 0 8px}
+@media(max-width:560px){.hero{flex-direction:column}.hero .plate{width:64px;height:64px}}
+
+.pgr{display:flex;justify-content:space-between;gap:18px;margin-top:46px;padding-top:14px;border-top:1px solid var(--line);font-size:14px}
+.pgr a{color:var(--mut)}
+.pgr a:hover{color:var(--acc)}
+
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:13px;padding:22px 34px}
+footer a{color:var(--mut);text-decoration:underline}
+
+#hb{display:none}
+#scrim{display:none}
+@media(max-width:900px){
+  nav{position:fixed;z-index:35;top:58px;left:0;background:var(--panel);transform:translateX(-105%);transition:.22s;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  body.open nav{transform:none}
+  body.open #scrim{display:block;position:fixed;inset:58px 0 0;background:rgba(0,0,0,.5);z-index:30}
+  #hb{display:grid}
+  main{padding:28px 18px 90px}
+  h1{font-size:29px}
+  .branch-note{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="ico" id="hb" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
+  <div class="logo-plate"><img src="https://github.com/hikariatama/assets/raw/master/1326-command-window-line-flat.webp" alt="Heroku"></div>
+  <div class="tt">Heroku Handbook<small>Telegram userbot</small></div>
+  <span class="grow"></span>
+  <span class="branch-note">master <b>2.1.0</b> · dev <b>2.2.2</b></span>
+  <div class="langs" aria-label="Language"><a href="index.html" lang="ru" aria-label="Русская версия">RU</a><a class="active" href="en.html" lang="en" aria-current="page" aria-label="English version">EN</a></div>
+  <button class="ico" id="th" aria-label="Toggle theme"><svg viewBox="0 0 24 24"><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-15.5a.9.9 0 0 1 .9.9v1.8a.9.9 0 1 1-1.8 0V3.4a.9.9 0 0 1 .9-.9zm0 15.4a.9.9 0 0 1 .9.9v1.8a.9.9 0 1 1-1.8 0v-1.8a.9.9 0 0 1 .9-.9zM3.5 11.1h1.8a.9.9 0 1 1 0 1.8H3.5a.9.9 0 1 1 0-1.8zm15.2 0h1.8a.9.9 0 1 1 0 1.8h-1.8a.9.9 0 1 1 0-1.8zM5.6 4.7l1.3 1.3a.9.9 0 1 1-1.3 1.3L4.3 6a.9.9 0 0 1 1.3-1.3zm12.5 12.5l1.3 1.3a.9.9 0 1 1-1.3 1.3l-1.3-1.3a.9.9 0 0 1 1.3-1.3zM5.6 19.3A.9.9 0 0 1 4.3 18l1.3-1.3a.9.9 0 0 1 1.3 1.3zM18.1 6.8a.9.9 0 0 1-1.3-1.3l1.3-1.3a.9.9 0 0 1 1.3 1.3z"/></svg></button>
+</header>
+<div id="scrim"></div>
+
+<div class="wrap">
+<nav id="nav">
+  <div class="grp">Getting started</div>
+  <a href="#about">About Heroku</a>
+  <a href="#install">Installation</a>
+  <a href="#login">First login</a>
+  <a href="#storage">Files and migration</a>
+  <a href="#basics">The basics</a>
+  <a href="#daily">Everyday tasks</a>
+  <div class="grp">Reference</div>
+  <a href="#cmds">All commands</a>
+  <details><summary>Command groups</summary>
+    <a class="sub" href="#cmd-core">Core and settings</a>
+    <a class="sub" href="#cmd-loader">Module loader</a>
+    <a class="sub" href="#cmd-updates">Updates</a>
+    <a class="sub" href="#cmd-code">Code and terminal</a>
+    <a class="sub" href="#cmd-backups">Backups</a>
+    <a class="sub" href="#cmd-security">Security</a>
+    <a class="sub" href="#cmd-presets">Master presets</a>
+  </details>
+  <a href="#inline">Inline bot and access</a>
+  <a href="#r">.e and the reply object</a>
+  <details><summary>Reply reference</summary>
+    <a class="sub" href="#r-fields">Text, sender, chat</a>
+    <a class="sub" href="#r-media">Media and files</a>
+    <a class="sub" href="#r-actions">Message methods</a>
+    <a class="sub" href="#r-examples">Examples</a>
+  </details>
+  <a href="#module">Writing a module</a>
+  <div class="grp">Branches</div>
+  <a href="#beta">Beta</a>
+  <a href="#devb">Dev branch</a>
+  <div class="grp">Help</div>
+  <a href="#faq">Troubleshooting</a>
+</nav>
+<main><div class="page" id="pages">
+<section id="about">
+  <div class="hero"><div class="plate"><img src="https://github.com/hikariatama/assets/raw/master/1326-command-window-line-flat.webp" alt="Heroku" width="66" height="66"></div><div><h1>Heroku Handbook</h1><p class="lead">Installation, first login, built-in commands and Python with <code>.e</code>. Beta and dev have their own chapters.</p></div></div>
+
+  <h2>What is a userbot?</h2>
+  <p>A regular Telegram bot has its own account. A userbot signs in as you and handles commands you send from your account. For example, <code>.ping</code> shows response time. You can send commands in Saved Messages, a private chat or a group, subject to the permissions you have there.</p>
+  <p>Heroku is a fork of Hikka. It uses herokutl, a Telethon fork. It redirects imports of <code>telethon</code> and <code>hikka</code> inside external modules to its own packages, which helps with compatibility. It does not guarantee that every older module works unchanged.</p>
+
+  <h2>What it can do</h2>
+  <ul><li>Run built-in commands for translation, diagnostics, backups and Python evaluation</li><li>Install modules with more commands from a repository or a Python file</li><li>Display menus and confirmation buttons through a personal inline bot</li><li>Manage permissions for commands, chats and other users</li><li>Switch the interface language, including Russian and English</li></ul>
+
+  <h2>Where data lives</h2>
+  <p>A local installation keeps API credentials in <code>config.json</code>, the Telegram session in <code>sessions/</code>, account settings in <code>config-&lt;id&gt;.json</code>, and external modules in <code>loaded_modules/</code>. Docker stores data under <code>/data</code>. Keep those files private, especially the session.</p>
+
+  <blockquote class="red"><span class="bt">One rule</span><p>Do not send anyone your session files or commit them to a public repository. A session file can let someone connect to your account without requesting a new login code.</p></blockquote>
+  <div class="pgr"><span></span><a href="#install">Installation →</a></div>
+</section>
+<section id="install">
+  <h1>Installation</h1>
+  <p class="lead">You need Python 3.10 or newer, git and a machine that can keep Heroku running.</p>
+
+  <h2>Where to run it</h2>
+  <p>A VPS is the straightforward choice for round-the-clock use. A home computer works while it is powered on. Termux on Android is possible, but Android may stop the process to save battery. Windows users can use WSL; the project's README calls that route less stable.</p>
+
+  <h2>Ubuntu and Debian</h2>
+  <div class="codetop"><span>terminal</span></div>
+  <pre><code>sudo apt update &amp;&amp; sudo apt install git python3 python3-venv -y
+git clone https://github.com/coddrago/Heroku
+cd Heroku
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 -m heroku</code></pre>
+  <p>The virtual environment keeps Heroku's Python dependencies separate from the rest of your system. Fedora uses <code>sudo dnf install git python3 -y</code> for the first line; Arch uses <code>sudo pacman -S git python --needed</code>. The remaining steps are the same.</p>
+
+  <h2>Installer script</h2>
+  <p>The repository also includes <code>install.sh</code>. It detects apt, pacman, dnf, Homebrew or Termux, installs dependencies, creates a virtual environment and starts Heroku.</p>
+  <div class="codetop"><span>terminal</span></div>
+  <pre><code>git clone https://github.com/coddrago/Heroku
+cd Heroku
+bash install.sh</code></pre>
+  <p>On failure it prints <code>heroku-install.log</code> to the terminal. It removes that log after a successful installation.</p>
+
+  <h2>Docker</h2>
+  <div class="codetop"><span>terminal</span></div>
+  <pre><code>git clone https://github.com/coddrago/Heroku
+cd Heroku
+bash docker.sh</code></pre>
+  <p>The script builds an image and starts an interactive setup. After login, use <code>docker-compose up -d</code>. The named <code>worker</code> volume persists data under <code>/data</code>. To build a dev image, use <code>docker-compose build --build-arg HEROKU_REF=dev</code>, then restart the container.</p>
+
+  <h2>Keeping it running</h2>
+  <p>For a normal installation, start from the Heroku directory with <code>source .venv/bin/activate</code> followed by <code>python3 -m heroku</code>. Closing that terminal stops the process. On a VPS you can keep it alive in <code>screen</code> or <code>tmux</code>; Docker users can run the container detached.</p>
+  <p>Heroku warns when run as root. Use a separate system user if possible. Pass <code>--root</code> only when you knowingly want modules to run with root privileges.</p>
+  <div class="pgr"><a href="#about">← About Heroku</a><a href="#login">First login →</a></div>
+</section>
+
+<section id="login">
+  <h1>First login</h1>
+  <p class="lead">Have your API ID and API hash ready before you start.</p>
+
+  <h2>Get your API credentials</h2>
+  <ol><li>Sign in at <a href="https://my.telegram.org">my.telegram.org</a>. Telegram sends the code to the app</li><li>Open <b>API development tools</b> and create an application</li><li>Copy <b>App api_id</b> (a number) and <b>App api_hash</b> (32 hexadecimal characters)</li></ol>
+  <p>Enter them when Heroku asks. It saves them to <code>config.json</code>. Do not publish the API hash.</p>
+
+  <h2>Sign in with QR or phone</h2>
+  <p>The prompt <code>Use QR code? [y/N]</code> offers two routes. For QR login, scan the code displayed in the terminal from Telegram's device settings. For phone login, enter your number in international format and then the code Telegram sends to your app. If two-step verification is enabled, enter its cloud password when asked. Password characters are not displayed while typing.</p>
+  <p>The session is saved as <code>sessions/heroku-&lt;your_id&gt;.session</code>, so subsequent launches normally do not ask for a code.</p>
+
+  <h2>Your inline bot</h2>
+  <p>Heroku uses a personal bot created through @BotFather for inline forms, galleries and confirmation buttons. When asked for a username, you can leave it blank to use an automatically generated one. A custom name must end in <code>bot</code>. The prompt can appear at a different point depending on the login route; with QR login Heroku may simply choose a name for you. You can later change it with <code>.ch_heroku_bot</code> or set a token with <code>.ch_bot_token</code>.</p>
+
+  <h2>After login</h2>
+  <p>Heroku creates a private <code>heroku-userbot</code> channel for backups and service files. Its inline bot may send a welcome message with language choices and ask how often to make backups. To check that commands work, send <code>.ping</code> to Saved Messages.</p>
+  <div class="pgr"><a href="#install">← Installation</a><a href="#storage">Files and migration →</a></div>
+</section>
+
+<section id="storage">
+  <h1>Files, backups and migration</h1>
+  <p class="lead">You can reinstall Python dependencies. Your session and account database are the files you need to protect and keep.</p>
+  <div class="tw"><table><thead><tr><th>Path</th><th>What it holds</th><th>Migrate?</th></tr></thead><tbody>
+    <tr><td><code>config.json</code></td><td>API credentials and device name</td><td>Yes, privately</td></tr>
+    <tr><td><code>sessions/</code></td><td>Telegram authorization</td><td>Yes, if you want to avoid a new login</td></tr>
+    <tr><td><code>config-&lt;id&gt;.json</code></td><td>Settings and data for that account</td><td>Yes</td></tr>
+    <tr><td><code>loaded_modules/</code></td><td>External module files</td><td>Yes, especially modules installed from files</td></tr>
+    <tr><td><code>.venv/</code></td><td>Python packages</td><td>No, recreate it on the new machine</td></tr>
+  </tbody></table></div>
+  <h2>Moving to another server</h2>
+  <ol><li>Stop Heroku on the old server so the same session is not active in two places</li><li>Transfer the project and the files above over a protected connection</li><li>Create a new virtual environment and install <code>requirements.txt</code> on the new server</li><li>Start Heroku and check <code>.ping</code></li></ol>
+  <p><code>.backupall</code> saves the database and external modules, but not a replacement Telegram session or your API credentials. If you migrate using only its archive, you will need to log in again.</p>
+  <h2>Finding backups</h2>
+  <p>The private service channel has a Backups topic. <code>.backupdb</code>, <code>.backupmods</code> and <code>.backupall</code> normally send files there and return a link. Check each command's response if the topic is unavailable.</p>
+  <div class="pgr"><a href="#login">← First login</a><a href="#basics">The basics →</a></div>
+</section>
+
+<section id="basics">
+  <h1>The basics</h1>
+  <p class="lead">A command is a message beginning with a prefix. The default prefix is a dot.</p>
+  <div class="codetop"><span>in any chat</span></div>
+  <pre><code>.help
+.ping
+.tr es Hello</code></pre>
+  <p>After the prefix comes the command name, then its arguments. In command help, <code>&lt;angle brackets&gt;</code> mean required input and <code>[square brackets]</code> mean optional input. Use the spelling shown by <code>.help</code>.</p>
+  <h2>Replies</h2>
+  <p>Some commands take a message to work on from your reply. Reply to a message with <code>.tr en</code> to translate its text. With <code>.e</code>, the replied-to message is available through <code>r</code>.</p>
+  <h2>Change the prefix</h2>
+  <div class="codetop"><span>in Telegram</span></div>
+  <pre><code>.setprefix !</code></pre>
+  <p>Commands now use <code>!</code>. Ask your inline bot for <code>/profile</code> if you forget the prefix; it displays the current value and a reset button. Longer prefixes require the <code>allow_nonstandart_prefixes</code> setting.</p>
+  <h2>Aliases and disabling commands</h2>
+  <p><code>.addalias p ping</code> adds a short command <code>.p</code>. Check saved aliases with <code>.aliases</code> and remove one with <code>.delalias p</code>. To temporarily disable a command use <code>.togglecmd name</code>; <code>.togglemod ModuleName</code> toggles a whole module. Run the same toggle again to restore it.</p>
+  <blockquote class="red"><span class="bt">Take care with code</span><p><code>.e</code> runs Python and <code>.terminal</code> runs shell commands on the machine hosting Heroku. Neither is a sandbox for snippets someone sent you.</p></blockquote>
+  <div class="pgr"><a href="#storage">← Files and migration</a><a href="#daily">Everyday tasks →</a></div>
+</section>
+
+<section id="daily">
+  <h1>Everyday tasks</h1>
+  <p class="lead">You do not need to memorize the entire command list. These are useful starting points.</p>
+  <h2>Find a command</h2><p>Send <code>.help</code> and choose a module. For example, <code>.help Translator</code> lists its translation commands. Installed external modules appear in the same help menu.</p>
+  <h2>Translate a message</h2><p>Reply to the text and send <code>.tr en</code>. To translate text written in the command itself, try <code>.tr es Hello</code>. Choose Telegram or Google as the provider in Translator's <code>.config</code> settings.</p>
+  <h2>Install a module</h2><p>After the loader's first-time verification, <code>.dlmod</code> lists available names and <code>.dlmod ModuleName</code> installs one from a repository. For a Python file, upload it and reply with <code>.loadmod</code>. <code>.loadmod</code> does not take a URL as a text argument. Check <code>.help</code> afterward.</p>
+  <h2>Read an error</h2><p><code>.logs</code> opens a level picker. Start with Error. For more detail choose Debug; <code>.logs debug -f</code> sends it without the extra private-data confirmation. Review the log before sharing it.</p>
+  <h2>Update or disable something</h2><p>Create a backup with <code>.backupall</code> before <code>.update</code>. On dev, updates display a confirmation when inline is available; the studied master handles confirmation differently. <code>.restart</code> restarts without updating. <code>.togglemod ModuleName</code> temporarily disables a module, while <code>.watcherbl ModuleName</code> disables its watcher in the current chat.</p>
+  <h2>Give limited access</h2><p><code>.tsec user @username ping 1h</code> offers to allow that user to run ping for one hour. Use <code>.security</code> for broader settings. <code>.owneradd</code> grants much more access than is needed for one command.</p>
+  <div class="pgr"><a href="#basics">← The basics</a><a href="#cmds">All commands →</a></div>
+</section>
+
+<section id="cmds">
+  <h1>Command reference</h1>
+  <p class="lead">Built-in commands in the studied master branch. Third-party modules add their own commands; use <code>.help ModuleName</code> for those. Names in parentheses are aliases.</p>
+  <div class="jumps"><a href="#cmd-core">Core</a><a href="#cmd-loader">Modules</a><a href="#cmd-updates">Updates</a><a href="#cmd-code">Code</a><a href="#cmd-backups">Backups</a><a href="#cmd-security">Access</a><a href="#cmd-presets">Presets</a></div>
+
+  <h2 id="cmd-core">Core commands and settings</h2>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.heroku</code></td><td>Shows the Heroku and herokutl versions and build details</td></tr>
+    <tr><td><code>.setprefix &lt;prefix&gt;</code></td><td>Changes the command prefix; a dot is the default</td></tr>
+    <tr><td><code>.aliases</code></td><td>Lists your custom aliases</td></tr>
+    <tr><td><code>.addalias &lt;alias&gt; &lt;command&gt;</code></td><td>Adds an alias, for example <code>.addalias p ping</code></td></tr>
+    <tr><td><code>.delalias &lt;alias&gt;</code></td><td>Removes an alias; <code>-c</code> or <code>--clear</code> clears all aliases</td></tr>
+    <tr><td><code>.blacklist [chat] [module]</code></td><td>Stops a module or all modules from working in a chat</td></tr>
+    <tr><td><code>.unblacklist &lt;chat_id&gt;</code></td><td>Removes a chat block</td></tr>
+    <tr><td><code>.blacklistuser [user]</code>, <code>.unblacklistuser [user]</code></td><td>Blocks or restores the commands a user would otherwise be allowed to run</td></tr>
+    <tr><td><code>.togglecmd &lt;command&gt;</code></td><td>Disables or enables one command</td></tr>
+    <tr><td><code>.togglemod &lt;module&gt;</code></td><td>Disables or enables a whole module</td></tr>
+    <tr><td><code>.clearmodule &lt;module&gt;</code></td><td>Deletes that module's saved database data</td></tr>
+    <tr><td><code>.cleardb</code></td><td>Clears the entire database after confirmation</td></tr>
+    <tr><td><code>.installation</code></td><td>Shows an installation guide in Telegram</td></tr>
+  </tbody></table></div>
+
+  <h2>Help</h2>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.help [module]</code></td><td>Lists modules or shows one module's commands</td></tr>
+    <tr><td><code>.helphide &lt;module&gt;</code></td><td>Hides or shows a module in the overall list</td></tr>
+    <tr><td><code>.support</code></td><td>Sends support links</td></tr>
+  </tbody></table></div>
+
+  <h2 id="cmd-loader">Module loader</h2>
+  <p>The first <code>.dlmod</code> or <code>.loadmod</code> requires a short verification through the inline bot. Until you pass it, the loader refuses to install modules.</p>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.dlmod</code> (<code>.dlm</code>)</td><td>Lists names from repositories; with a name, searches and installs that module</td></tr>
+    <tr><td><code>.dlmall</code></td><td>Offers to install all modules from a chosen repository</td></tr>
+    <tr><td><code>.loadmod</code> (<code>.lm</code>)</td><td>Loads a Python file attached to the command or to the message you replied to; a URL text argument is not supported</td></tr>
+    <tr><td><code>.unloadmod &lt;class&gt;</code> (<code>.ulm</code>)</td><td>Unloads a module by class name</td></tr>
+    <tr><td><code>.clearmodules</code></td><td>Removes installed external modules after confirmation</td></tr>
+    <tr><td><code>.addrepo &lt;url&gt;</code>, <code>.delrepo &lt;url&gt;</code></td><td>Adds a repository with a non-empty <code>full.txt</code>, or removes it</td></tr>
+    <tr><td><code>.ml &lt;module&gt;</code></td><td>Sends that module's source file</td></tr>
+  </tbody></table></div>
+
+  <h2>Information, watchers and general settings</h2>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.info</code>, <code>.ubinfo</code></td><td>Shows your bot's information card or an introduction to Heroku</td></tr>
+    <tr><td><code>.ping</code></td><td>Shows response time, uptime and system information</td></tr>
+    <tr><td><code>.settings</code></td><td>Opens toggles for NoNick, Grep, InlineLogs and update/restart buttons</td></tr>
+    <tr><td><code>.watchers</code></td><td>Lists active and disabled message watchers</td></tr>
+    <tr><td><code>.watcherbl &lt;module&gt;</code></td><td>Toggles that module's watcher in the current chat</td></tr>
+    <tr><td><code>.watcher &lt;module&gt;</code></td><td>Toggles a watcher globally; <code>-c</code>, <code>-p</code>, <code>-o</code>, <code>-i</code> restrict chats, PM, outgoing or incoming messages</td></tr>
+    <tr><td><code>.nonickuser</code>, <code>.nonickchat</code>, <code>.nonickcmd &lt;command&gt;</code></td><td>Toggle NoNick for a replied-to user, current group or command</td></tr>
+    <tr><td><code>.nonickusers</code>, <code>.nonickchats</code>, <code>.nonickcmds</code></td><td>List the respective NoNick settings</td></tr>
+  </tbody></table></div>
+  <p>Grep can filter command output using <code>| grep word</code> when enabled in <code>.settings</code>. InlineLogs controls whether command errors show a traceback in chat.</p>
+
+  <h2 id="cmd-updates">Updates</h2>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.update</code></td><td>Updates from the current branch. On dev, an inline confirmation appears when available; the studied master handles confirmation differently</td></tr>
+    <tr><td><code>.update -f</code></td><td>On dev, skips the normal confirmation</td></tr>
+    <tr><td><code>.autoupdate</code></td><td>Toggles automatic updates</td></tr>
+    <tr><td><code>.rollback</code></td><td>Rolls back a recent update</td></tr>
+    <tr><td><code>.restart</code>, <code>.ubstop</code></td><td>Restarts or stops Heroku</td></tr>
+    <tr><td><code>.changelog</code>, <code>.source</code></td><td>Shows recent changes or links to the source</td></tr>
+  </tbody></table></div>
+
+  <h2 id="cmd-code">Python, other languages and terminal</h2>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it needs</th></tr></thead><tbody>
+    <tr><td><code>.e</code> (<code>.eval</code>)</td><td>Runs Python with the installed <code>meval</code> package; see the <a href="#r">full guide</a></td></tr>
+    <tr><td><code>.ecpp</code>, <code>.ec</code></td><td>C++ with <code>g++</code>, C with <code>gcc</code></td></tr>
+    <tr><td><code>.ers</code>, <code>.eg</code>, <code>.enode</code></td><td>Require <code>rustc</code>, <code>go</code> or <code>node</code> respectively</td></tr>
+    <tr><td><code>.terminal &lt;shell command&gt;</code> (<code>.exec</code>)</td><td>Runs a shell command on the machine hosting Heroku</td></tr>
+    <tr><td><code>.terminate</code>, <code>.terminate -f</code></td><td>Reply to a running process's output to stop or force-kill it</td></tr>
+  </tbody></table></div>
+  <p>Some dangerous shell commands are blocked, but this is not a complete shell safety checker. <code>exec</code> is also available through the inline bot.</p>
+
+  <h2>Translation, language and logs</h2>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.tr [language] &lt;text&gt;</code></td><td>Translates entered text or the message you replied to, using the configured Telegram or Google provider</td></tr>
+    <tr><td><code>.setlang en</code></td><td>Sets the interface language. Packs also include ru, ua, de, jp and novelty languages</td></tr>
+    <tr><td><code>.dllangpack &lt;url&gt;</code></td><td>Adds an external language pack</td></tr>
+    <tr><td><code>.logs</code>, <code>.logs debug -f</code></td><td>Opens a log-level picker or sends Debug logs without the privacy confirmation</td></tr>
+    <tr><td><code>.clearlogs</code></td><td>Clears logging-handler buffers, not necessarily the on-disk <code>heroku.log</code> file</td></tr>
+    <tr><td><code>.suspend &lt;seconds&gt;</code></td><td>Pauses the process for the specified time</td></tr>
+  </tbody></table></div>
+
+  <h2 id="cmd-backups">Backups</h2>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.backupdb</code>, <code>.restoredb</code></td><td>Saves the database or restores it from a file you replied to</td></tr>
+    <tr><td><code>.backupmods</code>, <code>.restoremods</code></td><td>Saves external modules or restores them from an archive</td></tr>
+    <tr><td><code>.backupall</code>, <code>.restoreall</code></td><td>Saves or restores both database and modules</td></tr>
+    <tr><td><code>.set_backup_period &lt;hours&gt;</code></td><td>Sets automatic backup frequency; <code>24</code> means daily, <code>0</code> disables it</td></tr>
+  </tbody></table></div>
+
+  <h2 id="cmd-security">Access and security</h2>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.security [command]</code>, <code>.inlinesec [command]</code></td><td>Configure access globally or for a regular/inline command</td></tr>
+    <tr><td><code>.querysec</code></td><td>Toggles external inline-query access</td></tr>
+    <tr><td><code>.owneradd [-f] [-n] &lt;user&gt;</code>, <code>.ownerrm</code>, <code>.ownerlist</code></td><td>Adds, removes or lists co-owners; <code>-f</code> skips confirmation, <code>-n</code> enables NoNick</td></tr>
+    <tr><td><code>.newsgroup</code>, <code>.sgroups</code>, <code>.sgroup</code>, <code>.delsgroup</code></td><td>Create, list, inspect or delete security groups</td></tr>
+    <tr><td><code>.sgroupadd</code>, <code>.sgroupdel</code></td><td>Add or remove a user in a security group</td></tr>
+    <tr><td><code>.tsec</code>, <code>.tsecrm</code>, <code>.tsecclr</code></td><td>List, grant or remove targeted rules for users, chats and security groups</td></tr>
+  </tbody></table></div>
+  <p>For example, <code>.tsec user @username ping 1h</code> offers to allow ping for an hour. The rule types cover commands, entire modules and inline handlers.</p>
+
+  <h2>Inline bot, configuration and accounts</h2>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.ch_heroku_bot &lt;username&gt;</code>, <code>.ch_bot_token &lt;token&gt;</code></td><td>Changes the inline bot's username or token</td></tr>
+    <tr><td><code>/profile</code>, <code>/start</code> to the inline bot</td><td>Shows your prefix and reset button, or the bot's welcome page</td></tr>
+    <tr><td><code>.config</code></td><td>Opens module and library configuration menus</td></tr>
+    <tr><td><code>.cfg &lt;module&gt; &lt;option&gt; &lt;value&gt;</code></td><td>Sets a value directly. <code>.fcfg</code> is an additional alias on master, absent on dev</td></tr>
+    <tr><td><code>.addacc &lt;user&gt;</code>, <code>.switchacc</code></td><td>Starts adding another Telegram account or switching accounts</td></tr>
+    <tr><td><code>.api_fw_protection</code>, <code>.suspend_api_protect &lt;seconds&gt;</code></td><td>Toggles or temporarily suspends the API rate limiter</td></tr>
+  </tbody></table></div>
+
+  <h2 id="cmd-presets">Presets on master only</h2>
+  <p>Dev and beta no longer include <code>presets.py</code>. On master, these commands exist:</p>
+  <div class="tw"><table><thead><tr><th>Command</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>.presets</code></td><td>Shows ready-made module packs</td></tr>
+    <tr><td><code>.loadpreset</code> (<code>.lp</code>)</td><td>Loads a preset file</td></tr>
+    <tr><td><code>.addtofolder</code> (<code>.af</code>), <code>.removefromfolder</code> (<code>.rff</code>)</td><td>Edits your custom module folder</td></tr>
+    <tr><td><code>.folderload</code> (<code>.fl</code>)</td><td>Sends a folder as a preset file</td></tr>
+    <tr><td><code>.loadaliases</code> (<code>.la</code>), <code>.aliasload</code> (<code>.al</code>)</td><td>Imports or exports aliases as a file</td></tr>
+  </tbody></table></div>
+  <div class="pgr"><a href="#daily">← Everyday tasks</a><a href="#inline">Inline bot and access →</a></div>
+</section>
+
+<section id="inline">
+  <h1>Inline bot and access</h1>
+  <p class="lead">The personal inline bot handles forms and buttons. The security system controls who may run commands and press those buttons.</p>
+  <h2>Why there is a second bot</h2><p>Commands come from your own account, but Telegram needs a bot for inline forms. Heroku configures one through @BotFather. It displays <code>.config</code> menus, confirmations, galleries and paginated lists. Send <code>/profile</code> to that bot to check your prefix or reset it.</p>
+  <h2>Who can run commands?</h2><p>Your outgoing commands pass the permission check. Other users have no default access. Open <code>.security</code> for global permissions, <code>.security command_name</code> for a particular command and <code>.inlinesec</code> for inline handlers. <code>.querysec</code> toggles queries from other users.</p>
+  <h2>One temporary rule</h2><p><code>.tsec user @username ping 1h</code> offers to grant one person the ping command for an hour. Run <code>.tsec</code> without arguments to list active rules. You can also target a chat or a security group.</p>
+  <h2>Chat blocks and watchers</h2><p><code>.blacklist</code> blocks a chat and <code>.unblacklist</code> restores it. If a background watcher is noisy in one chat, run <code>.watcherbl ModuleName</code> there instead of removing the whole module.</p>
+  <blockquote class="red"><span class="bt">Co-owner access</span><p><code>.owneradd</code> grants broad permissions. For one or two commands, a targeted <code>.tsec</code> rule is usually a better fit.</p></blockquote>
+  <div class="pgr"><a href="#cmds">← All commands</a><a href="#r">.e and reply →</a></div>
+</section>
+
+<section id="r">
+  <h1><code>.e</code>: Python in chat</h1>
+  <p class="lead">Write a Python expression after <code>.e</code>. Heroku evaluates it using <code>meval</code> inside the running userbot process and sends back the result.</p>
+  <div class="codetop"><span>Saved Messages</span></div>
+  <pre><code>.e 2 + 2
+.e "hello".upper()
+.e await client.get_me()
+.e print("hello from Python")</code></pre>
+  <p>Top-level <code>await</code> works, <code>print()</code> output is captured, and Heroku displays execution time. The code is real Python running with Heroku's permissions, not a sandbox. The evaluator masks several known secrets in its output, but do not rely on that to safely run code from strangers.</p>
+
+  <h2>Names available inside .e</h2>
+  <div class="tw"><table><thead><tr><th>Name</th><th>Meaning</th></tr></thead><tbody>
+    <tr><td><code>message</code>, <code>m</code>, <code>event</code></td><td>Your command message</td></tr>
+    <tr><td><code>r</code>, <code>reply</code></td><td>The message you replied to, or <code>None</code></td></tr>
+    <tr><td><code>client</code>, <code>c</code></td><td>Telegram client</td></tr>
+    <tr><td><code>chat</code></td><td>The command message's destination (<code>message.to_id</code>)</td></tr>
+    <tr><td><code>db</code>, <code>lookup</code>, <code>self</code></td><td>Database, module lookup and Evaluator instance</td></tr>
+    <tr><td><code>utils</code>, <code>loader</code>, <code>main</code></td><td>Heroku helpers</td></tr>
+    <tr><td><code>herokutl</code>, <code>telethon</code>, <code>hikkatl</code></td><td>Three names referring to herokutl</td></tr>
+  </tbody></table></div>
+  <p>Herokutl's Telegram TL functions and types are also exposed under their class names. <code>-so</code> or <code>--skip-output</code> runs code without sending the usual result; on master put it immediately after <code>.e</code>. If you send <code>.e</code> with no code while replying to a text message, Heroku tries to evaluate the replied-to text. Read it first.</p>
+
+  <h2>What is r?</h2>
+  <p><code>r</code> is the same object as <code>reply</code>, returned by <code>await message.get_reply_message()</code>. Reply to a message and send <code>.e r.text</code>. With no reply, both names are <code>None</code>, so <code>r.text</code> raises an error.</p>
+  <p>The reference below was checked against the installed herokutl 2.1.0 Message class used by master. Dev depends on herokutl 2.2.0.dev2 and may provide additional rich-message behavior. Properties are read without <code>await</code>; async methods require it.</p>
+  <div class="subnav" aria-label="Reply reference"><a href="#r-fields">Text and chat</a><a href="#r-media">Media</a><a href="#r-actions">Methods</a><a href="#r-examples">Examples</a></div>
+
+  <h2 id="r-fields">Text, sender and chat</h2>
+  <div class="tw"><table><thead><tr><th>Property on r</th><th>Meaning</th></tr></thead><tbody>
+    <tr><td><code>text</code>, <code>raw_text</code>, <code>message</code></td><td>Formatted text under the client's parse mode, and raw text. Raw text may be <code>None</code> on service messages</td></tr>
+    <tr><td><code>entities</code></td><td>Formatting entities such as links, bold and code</td></tr>
+    <tr><td><code>id</code></td><td>Message ID. Use <code>r.id</code>, not <code>r.message_id</code></td></tr>
+    <tr><td><code>date</code>, <code>edit_date</code></td><td>Sent and last edited timestamps</td></tr>
+    <tr><td><code>sender_id</code>, <code>sender</code>, <code>input_sender</code>, <code>from_id</code></td><td>Sender ID, cached sender, API input sender and raw sender peer</td></tr>
+    <tr><td><code>chat_id</code>, <code>chat</code>, <code>input_chat</code>, <code>peer_id</code>, <code>to_id</code></td><td>Chat ID, cached chat and peer variants for Telegram requests</td></tr>
+    <tr><td><code>is_private</code>, <code>is_group</code>, <code>is_channel</code></td><td>Chat type; supergroups can be both groups and channels in the API</td></tr>
+    <tr><td><code>out</code>, <code>post</code>, <code>mentioned</code></td><td>Outgoing flag, channel-post flag and whether you were mentioned</td></tr>
+    <tr><td><code>is_reply</code>, <code>reply_to_msg_id</code>, <code>reply_to</code></td><td>Reply flag, original message ID and raw reply header</td></tr>
+    <tr><td><code>reply_to_chat</code>, <code>reply_to_sender</code></td><td>Original chat/sender for cross-chat replies when available</td></tr>
+  </tbody></table></div>
+  <p><code>r.sender</code> and <code>r.chat</code> can be empty if they are not cached. <code>await r.get_sender()</code> and <code>await r.get_chat()</code> can fetch them, though they too may return <code>None</code>.</p>
+
+  <h2 id="r-media">Media, files and buttons</h2>
+  <div class="tw"><table><thead><tr><th>Property on r</th><th>Meaning</th></tr></thead><tbody>
+    <tr><td><code>media</code>, <code>file</code></td><td>Raw media and a convenient File wrapper for photos or documents. <code>file</code> may be <code>None</code></td></tr>
+    <tr><td><code>photo</code>, <code>document</code></td><td>Photo or document when present</td></tr>
+    <tr><td><code>video</code>, <code>video_note</code>, <code>gif</code></td><td>Video, round video or animation</td></tr>
+    <tr><td><code>audio</code>, <code>voice</code>, <code>sticker</code></td><td>Audio, voice note or sticker</td></tr>
+    <tr><td><code>web_preview</code>, <code>contact</code>, <code>geo</code></td><td>Web preview, contact or coordinates</td></tr>
+    <tr><td><code>venue</code>, <code>poll</code>, <code>dice</code>, <code>game</code>, <code>invoice</code></td><td>Place, poll, dice roll, game or invoice</td></tr>
+    <tr><td><code>buttons</code>, <code>button_count</code>, <code>reply_markup</code></td><td>Buttons by row, total button count and raw markup</td></tr>
+    <tr><td><code>media_unread</code>, <code>grouped_id</code></td><td>Media unread flag and album/group ID</td></tr>
+  </tbody></table></div>
+  <p>When <code>r.file</code> exists, it may have <code>name</code>, <code>ext</code>, <code>mime_type</code>, <code>size</code>, <code>width</code>, <code>height</code>, <code>duration</code>, <code>title</code>, <code>performer</code>, <code>emoji</code>, <code>sticker_set</code> and <code>id</code>. An image will not have a song title. Check for a file before reading its fields.</p>
+
+  <h2>Forwards, reactions and raw fields</h2>
+  <p><code>forward</code> and <code>fwd_from</code> describe forwarding. <code>views</code>, <code>forwards</code> and <code>replies</code> hold counts or reply data if Telegram supplied them. <code>reactions</code>, <code>pinned</code>, <code>post_author</code>, <code>silent</code>, <code>noforwards</code>, <code>via_bot_id</code>, <code>via_bot</code>, <code>via_input_bot</code>, <code>ttl_period</code> and <code>restriction_reason</code> are available when relevant. Service messages can contain <code>action</code> and <code>action_entities</code>.</p>
+  <p>There are more raw fields such as <code>saved_peer_id</code>, <code>from_scheduled</code>, <code>legacy</code>, <code>edit_hide</code>, <code>invert_media</code>, <code>offline</code>, <code>effect</code>, <code>factcheck</code>, <code>suggested_post</code> and <code>rich_message</code>. They depend on the message type and herokutl version.</p>
+
+  <h2 id="r-actions">Message methods</h2>
+  <p>Every method in this table needs <code>await</code> except <code>get_entities_text()</code>.</p>
+  <div class="tw"><table><thead><tr><th>Method on r</th><th>What it does</th></tr></thead><tbody>
+    <tr><td><code>get_sender()</code>, <code>get_input_sender()</code></td><td>Gets the sender or an API input peer, fetching data when necessary</td></tr>
+    <tr><td><code>get_chat()</code>, <code>get_input_chat()</code></td><td>Gets the chat or an API input peer</td></tr>
+    <tr><td><code>get_reply_message()</code></td><td>Gets the message that <code>r</code> itself replies to</td></tr>
+    <tr><td><code>respond("text")</code>, <code>reply("text")</code></td><td>Sends to the chat; <code>reply</code> replies directly to <code>r</code></td></tr>
+    <tr><td><code>forward_to("me")</code></td><td>Forwards the message to Saved Messages</td></tr>
+    <tr><td><code>edit("text")</code>, <code>delete()</code></td><td>Edits or deletes if Telegram permissions allow it</td></tr>
+    <tr><td><code>download_media()</code></td><td>Downloads attached media to the host</td></tr>
+    <tr><td><code>get_buttons()</code>, <code>click(0)</code>, <code>click(text="Yes")</code></td><td>Retrieves buttons or clicks one; indices start at zero</td></tr>
+    <tr><td><code>mark_read()</code></td><td>Marks the message as read</td></tr>
+    <tr><td><code>pin()</code>, <code>unpin()</code></td><td>Pins or unpins where permitted</td></tr>
+    <tr><td><code>react("👍")</code></td><td>Sends a reaction when permitted</td></tr>
+    <tr><td><code>link()</code></td><td>Builds a message link where supported</td></tr>
+    <tr><td><code>translate("en")</code></td><td>Returns a translation through the client method where available</td></tr>
+    <tr><td><code>get_entities_text()</code></td><td>Synchronous: returns pairs of formatting entity and matching text</td></tr>
+  </tbody></table></div>
+  <p><code>click</code> also accepts row and column, <code>filter</code> or callback <code>data</code>. Buttons requesting your phone, location or 2FA password need explicit arguments. Do not click buttons in untrusted messages blindly.</p>
+
+  <h2 id="r-examples">Examples and common mistakes</h2>
+  <div class="codetop"><span>reply to the target message</span></div>
+  <pre><code>.e len(r.raw_text or "")
+.e len((r.raw_text or "").split())
+.e r.file.name if r.file else "No file"
+.e (await r.get_sender()).first_name
+.e await r.reply("Got it")
+.e await r.forward_to("me")
+.e await r.link()
+.e await r.react("👍")
+.e await r.download_media()</code></pre>
+  <p><code>r.raw_text</code> may be <code>None</code>, so the counting examples use <code>or ""</code>. <code>r.file.name</code> fails without an attached file. Even <code>get_sender()</code> may return <code>None</code>. You cannot edit someone else's message merely because you obtained it through a reply.</p>
+  <h2>Output and other languages</h2>
+  <p><code>-so</code> suppresses the usual result: <code>.e -so await r.delete()</code>. Evaluator displays Python errors with a traceback and blocks <code>db.set("heroku.security", "owner", ...)</code>. The masking of known secrets is a backup measure, not a security boundary.</p>
+  <p>For other languages use <code>.ecpp</code> (C++), <code>.ec</code> (C), <code>.ers</code> (Rust), <code>.eg</code> (Go) or <code>.enode</code> (JavaScript). Their compilers or runtimes must be installed separately. They do not provide the Python variable <code>r</code>.</p>
+  <div class="pgr"><a href="#inline">← Inline bot and access</a><a href="#module">Writing a module →</a></div>
+</section>
+
+<section id="module">
+  <h1>Writing a module</h1>
+  <p class="lead">A module is a Python file defining a class derived from <code>loader.Module</code>. Upload the file to Telegram and reply to it with <code>.loadmod</code>.</p>
+  <h2>A minimal command</h2>
+  <div class="codetop"><span>hello.py</span></div>
+  <pre><code>from heroku import loader, utils
+
+
+@loader.tds
+class HelloMod(loader.Module):
+    """A small greeting module"""
+
+    strings = {"name": "Hello"}
+
+    @loader.command()
+    async def hello(self, message):
+        """Send a greeting"""
+        await utils.answer(message, "Hello")</code></pre>
+  <p>The command becomes <code>.hello</code>. The method docstring is shown in help. Alternatively, name the method <code>hellocmd</code>, whose <code>cmd</code> suffix is removed from the command name.</p>
+  <h2>Arguments and a reply</h2>
+  <p><code>utils.get_args_raw(message)</code> returns the text after the command. <code>utils.get_args(message)</code> splits it into arguments. <code>await message.get_reply_message()</code> retrieves the message being replied to:</p>
+  <div class="codetop"><span>inside a module class</span></div>
+  <pre><code>@loader.command()
+async def wordscmd(self, message):
+    """Count words in a reply"""
+    reply = await message.get_reply_message()
+    if not reply:
+        await utils.answer(message, "Reply to a text message")
+        return
+    await utils.answer(message, str(len((reply.raw_text or "").split())))</code></pre>
+  <h2>Configuration and saved data</h2>
+  <div class="codetop"><span>inside a module class</span></div>
+  <pre><code>def __init__(self):
+    self.config = loader.ModuleConfig(
+        loader.ConfigValue(
+            "greeting", "Hello", "Text to send",
+            validator=loader.validators.String(),
+        ),
+    )</code></pre>
+  <p>This appears in <code>.config</code> and can be read with <code>self.config["greeting"]</code>. For module-owned persistent data use <code>self.get("key", default)</code> and <code>self.set("key", value)</code>. <code>self.pointer</code> gives an auto-saving list or dict wrapper.</p>
+  <h2>Watching messages and scheduling work</h2>
+  <div class="codetop"><span>inside a module class</span></div>
+  <pre><code>@loader.watcher("in", "only_messages", "no_commands")
+async def watcher(self, message):
+    if "hello" in (message.raw_text or "").lower():
+        await message.reply("Hello")
+
+@loader.loop(interval=300, autostart=True)
+async def ticker(self):
+    await self.client.send_message("me", "Five minutes passed")</code></pre>
+  <p>The watcher tags restrict it to incoming messages, excluding service events and userbot commands. A loop's interval is measured in seconds. A watcher replying to every message can quickly hit Telegram rate limits, so narrow its conditions.</p>
+  <h2>Buttons and lifecycle</h2>
+  <p><code>self.inline.form(text="Menu", message=message, reply_markup=[{"text": "Close", "action": "close"}])</code> creates an inline form when the personal inline bot is available. Button callbacks receive an object with <code>answer()</code>, <code>edit()</code>, <code>delete()</code> and <code>unload()</code>.</p>
+  <p>Use <code>client_ready</code> after the Telegram client becomes available, <code>config_complete</code> after configuration loads and <code>on_unload</code> for cleanup. A <code>loader.LoadError("reason")</code> raised during loading tells the user why the module cannot run. Module objects provide <code>self.client</code>, <code>self.db</code>, <code>self.inline</code>, <code>self.lookup</code>, <code>self.tg_id</code> and <code>self.get_prefix()</code>.</p>
+  <h2>File metadata and libraries</h2>
+  <div class="codetop"><span>at the top of a module file</span></div>
+  <pre><code># meta developer: @username
+# requires: requests
+# scope: heroku_min 2.1.0
+
+__version__ = (1, 0, 0)</code></pre>
+  <p>The loader reads these lines to display the developer, install a pip dependency and check minimum Heroku version. Older <code>telethon</code>, <code>hikkatl</code> and <code>hikka</code> imports are redirected to Heroku's packages; test older modules anyway. Shared libraries can be loaded with <code>self.import_lib(url)</code> and need a <code>loader.Library</code> subclass whose name ends in <code>Lib</code>.</p>
+  <p>For working examples, read <code>heroku/modules/translate.py</code> and <code>heroku/modules/test.py</code> in the branch you are targeting.</p>
+  <div class="pgr"><a href="#r">← .e and reply</a><a href="#beta">Beta →</a></div>
+</section>
+
+<section id="beta">
+  <h1>Beta</h1>
+  <p class="lead">The public testing branch for the next release. At the date of this handbook, <code>origin/beta</code> and <code>origin/dev</code> both pointed to commit <code>dba41c58</code>. Their code was identical then.</p>
+  <h2>Why use beta?</h2>
+  <p>It lets testers try changes before they reach master. It is not a promise of stability or a separate feature set from dev at the studied commit.</p>
+  <div class="pc"><div class="plus"><h4>Upsides</h4><ul><li>New RichText and prefix features before master</li><li>Fixes that have not yet shipped in a stable release</li><li>A chance to test your own modules against the next version</li></ul></div><div class="minus"><h4>Trade-offs</h4><ul><li>Beta-tester check at startup</li><li>Changes can break older modules</li><li>Some master commands, including presets, are gone</li><li>Depends on <code>herokutl==2.2.0.dev2</code></li></ul></div></div>
+  <h2>The tester check</h2>
+  <p>Dev and beta fetch an allowed-ID list from <code>coddrago/modules-web</code>. If your account is not on it and the checked-out branch is not an ancestor of <code>origin/master</code>, Heroku attempts to reset the working tree to master and restarts. Do not switch branches while keeping uncommitted work in the Heroku checkout.</p>
+  <blockquote class="red"><span class="bt">A bug in this code path</span><p>After the reset it attempts <code>self.client.log_out()</code>, but the launcher does not create <code>self.client</code>. The exception is caught. Thus logout is not guaranteed in the studied commit; the reset attempt and restart can still happen.</p></blockquote>
+  <h2>Install beta</h2>
+  <p>For accounts with testing access, clone the repository and check out beta before installing dependencies:</p>
+  <div class="codetop"><span>terminal</span></div>
+  <pre><code>git clone https://github.com/coddrago/Heroku
+cd Heroku
+git checkout beta
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 -m heroku</code></pre>
+  <p>On an existing installation, stop Heroku, create a backup with <code>.backupall</code>, run <code>git fetch origin</code> and <code>git checkout beta</code>, activate your virtual environment, reinstall requirements and start Heroku. The <a href="#devb">dev page</a> describes the currently shared changes in detail.</p>
+  <div class="pgr"><a href="#module">← Writing a module</a><a href="#devb">Dev branch →</a></div>
+</section>
+
+<section id="devb">
+  <h1>Dev branch</h1>
+  <p class="lead">The studied dev commit reports Heroku 2.2.2 and <code>herokutl==2.2.0.dev2</code>. Beta pointed to the same commit at the time of writing; their names do not imply a code difference right now.</p>
+  <h2>Which branch to pick</h2>
+  <div class="tw"><table><thead><tr><th>Branch</th><th>Best for</th><th>Trade-off</th></tr></thead><tbody>
+    <tr><td><code>master</code>, 2.1.0</td><td>Everyday use</td><td>Does not yet have dev's additions</td></tr>
+    <tr><td><code>beta</code>, 2.2.2</td><td>Testing access and early feedback</td><td>Changes may break familiar behavior</td></tr>
+    <tr><td><code>dev</code>, 2.2.2</td><td>Following development or module compatibility work</td><td>Currently identical to beta, but future commits can diverge</td></tr>
+  </tbody></table></div>
+  <div class="pc"><div class="plus"><h4>Dev benefits</h4><ul><li>RichText support in messages and forms</li><li>Multiple prefixes and per-user prefixes</li><li>Better protection for secrets in logs and service channels</li><li>Per-account logging and a module filter</li></ul></div><div class="minus"><h4>Dev costs</h4><ul><li>Startup can attempt a reset to master without beta-tester access</li><li>Uses a development herokutl release</li><li>The presets module was removed</li><li>Dev-only APIs will not run on master</li></ul></div></div>
+
+  <h2>Changes you will notice</h2>
+  <h3>Prefixes and command conflicts</h3><p><code>.setprefix . ! ?</code> gives the owner multiple prefixes, the first being primary. People who already have permissions can receive a personal prefix with <code>.setprefix --user 123456789 !</code>. If installed modules claim the same command, Heroku offers a choice instead of silently replacing one.</p>
+  <h3>Module cache and updates</h3><p>External modules are cached on disk. When an ordinary module changes upstream, the loader can offer an update. Built-in updates and URLs you have marked for automatic updates do not ask again. Check the source when approving changed code.</p>
+  <h3>RichText and terminal</h3><p>Some built-in modules have a <code>rich_mode</code> setting for newer Telegram rich messages. Forms can use <code>self.inline.form(..., rich_message=...)</code>. Sudo password input in Terminal moved from editing a Saved Messages message to an inline form that passes the password to the process. <code>.kill</code> is an alias for <code>.terminate</code>.</p>
+  <h3>Logs and hardening</h3><p>Logs can be routed per account, and <code>.logs ModuleName</code> filters by module. Known session strings, phone numbers and tokens are masked in logs. The database/config are written via private temporary files, the session directory receives restricted permissions, and the bot checks its private service channel before reusing it for backups. Code-download URLs are validated more strictly.</p>
+
+  <h2>For module authors</h2>
+  <ul><li><code>self.create_task(coroutine)</code> tracks tasks so unloading a module can clean them up</li><li>The <code>Hidden</code> config validator registers values as secrets</li><li>Forms gain <code>rich_message</code> and <code>reply_to</code>; additional utilities expose memory, swap and rich output helpers</li><li>The old <code>_send_stats</code> block was removed</li></ul>
+
+  <h2>Removed or changed commands</h2>
+  <p><code>presets.py</code> is gone, so <code>.presets</code>, <code>.loadpreset</code>, folder commands and alias-file commands are absent. <code>.fcfg</code> was removed. <code>.cfg Module option value</code> still works on dev: it is now an alias of <code>.config</code>, whose handler also accepts direct values.</p>
+
+  <h2>Switch to dev or back</h2>
+  <p>Stop Heroku and back up your data first. In its directory, with the virtual environment active:</p>
+  <div class="codetop"><span>terminal</span></div>
+  <pre><code>git fetch origin
+git checkout dev
+pip install -r requirements.txt
+python3 -m heroku</code></pre>
+  <p>To return, replace <code>git checkout dev</code> with <code>git checkout master</code> and reinstall requirements. The database and sessions are outside Git, but switching does not replace a backup. Docker supports <code>docker-compose build --build-arg HEROKU_REF=dev</code>.</p>
+  <blockquote class="red"><span class="bt">Tester gate</span><p><code>version.check_branch</code> runs during startup on dev. Without a permitted account ID it may try to restore master and restart before normal commands load. The attempted logout contains the bug explained on the Beta page.</p></blockquote>
+  <div class="pgr"><a href="#beta">← Beta</a><a href="#faq">Troubleshooting →</a></div>
+</section>
+
+<section id="faq">
+  <h1>Troubleshooting</h1>
+  <p class="lead">Start with terminal output and <code>.logs</code>. The last line of an error often identifies the problem.</p>
+  <details><summary>Heroku warns about running as root</summary><div class="b"><p>Use a regular system user. If running as root is intentional, start with <code>python3 -m heroku --root</code>. External modules will then have root privileges too.</p></div></details>
+  <details><summary>Python 3.10 or newer is required</summary><div class="b"><p>Check <code>python3 --version</code>. Install a newer version, recreate <code>.venv</code> with that Python, then reinstall <code>requirements.txt</code>.</p></div></details>
+  <details><summary>“Check that this is the only instance running”</summary><div class="b"><p>Another process has the session file open. Stop the duplicate. If you used screen, reconnect with <code>screen -r heroku</code> rather than starting a second copy.</p></div></details>
+  <details><summary>API ID or hash is rejected</summary><div class="b"><p>Check that both values are from the same application on my.telegram.org. Replace the incorrect <code>config.json</code> values and run setup again.</p></div></details>
+  <details><summary>Telegram reports FloodWait</summary><div class="b"><p>Wait for the period stated in the error before trying again. Repeated login attempts may make it longer.</p></div></details>
+  <details><summary>The Telegram session stopped working</summary><div class="b"><p>Check Telegram's device list. If you revoked the session or used the same file concurrently on two machines, sign in again.</p></div></details>
+  <details><summary>The inline bot was not created</summary><div class="b"><p>@BotFather may limit new bots. You can use an existing bot via <code>.ch_heroku_bot</code> and <code>.ch_bot_token</code>. Keep its token private.</p></div></details>
+  <details><summary>Commands do not respond</summary><div class="b"><p>Check that the process is running, the command comes from the authorized account, and you are using the current prefix. Your inline bot's <code>/profile</code> shows the prefix. A chat blacklist can also block commands.</p></div></details>
+  <details><summary>A module will not load</summary><div class="b"><p>Open <code>.logs</code> for the cause: missing dependency, incompatible version, code error or unavailable inline bot. Try disabling the failing module before resetting the whole installation.</p></div></details>
+  <details><summary>I want to start from scratch</summary><div class="b"><p>Save a backup first. <code>python3 -m heroku -w</code> asks for confirmation and removes config, sessions and installed modules. <code>.cleardb</code> clears only the database.</p></div></details>
+  <h2>Getting help</h2><p><code>.support</code> sends the project's support links. Review logs for private data before posting them in a public chat.</p>
+  <div class="pgr"><a href="#devb">← Dev branch</a><a href="#about">Back to start ↑</a></div>
+</section>
+
+</div></main>
+</div>
+<footer><div class="page"><p>Documentation by <a href="https://github.com/ziahka">ziahka</a>. Information current as of 25 September 2026. Based on <a href="https://github.com/coddrago/Heroku">Heroku source code</a>, master 2.1.0 and dev 2.2.2.</p></div></footer>
+<script>
+(function(){
+  var secs=[].slice.call(document.querySelectorAll('section'));
+  var links=[].slice.call(document.querySelectorAll('#nav a'));
+  var ids=secs.map(function(s){return s.id});
+
+  function show(id){
+    var target=document.getElementById(id);
+    var section=target&&target.closest('section');
+    if(!section){id=ids[0];target=document.getElementById(id);section=target}
+    var item=links.find(function(a){return a.getAttribute('href')==='#'+target.id});
+    if(item&&item.closest('#nav details')&&location.hash) item.closest('details').open=true;
+    var changed=!section.classList.contains('on');
+    secs.forEach(function(s){s.classList.toggle('on',s===section)});
+    links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+target.id)});
+    document.body.classList.remove('open');
+    if(target===section){window.scrollTo(0,0)}
+    else if(changed){window.scrollTo(0,0);requestAnimationFrame(function(){requestAnimationFrame(function(){target.scrollIntoView({block:'start'})})})}
+    else{target.scrollIntoView({block:'start'})}
+  }
+  addEventListener('popstate',function(){show(location.hash.slice(1))});
+  document.body.addEventListener('click',function(e){
+    var a=e.target.closest('a[href^="#"]');
+    if(!a) return;
+    var id=a.getAttribute('href').slice(1);
+    if(!document.getElementById(id)) return;
+    e.preventDefault();
+    history.pushState(null,'','#'+id);
+    show(id);
+  });
+
+  document.querySelectorAll('.codetop').forEach(function(t){
+    var pre=t.nextElementSibling;
+    if(!pre||pre.tagName!=='PRE') return;
+    var b=document.createElement('button');
+    b.className='cp'; b.textContent='copy';
+    b.onclick=function(){
+      navigator.clipboard.writeText(pre.innerText).then(function(){
+        b.textContent='copied'; b.classList.add('ok');
+        setTimeout(function(){b.textContent='copy';b.classList.remove('ok')},1500);
+      });
+    };
+    t.appendChild(b);
+  });
+
+  function theme(t){
+    document.documentElement.setAttribute('data-theme',t);
+    try{localStorage.setItem('hh-theme',t)}catch(e){}
+  }
+  var saved='dark';
+  try{saved=localStorage.getItem('hh-theme')||'dark'}catch(e){}
+  theme(saved);
+  document.getElementById('th').onclick=function(){
+    theme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+  };
+  document.getElementById('hb').onclick=function(){document.body.classList.toggle('open')};
+  document.getElementById('scrim').onclick=function(){document.body.classList.remove('open')};
+
+  document.querySelectorAll('.langs a').forEach(function(a){
+    a.addEventListener('click',function(){
+      var current=location.hash.slice(1);
+      if(current&&document.getElementById(current)) a.href=a.getAttribute('href').split('#')[0]+'#'+encodeURIComponent(current);
+    });
+  });
+
+  show(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>

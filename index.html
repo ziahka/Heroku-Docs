@@ -1,0 +1,1300 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heroku Userbot. Handbook</title>
+<meta name="description" content="Неформальный справочник по юзерботу Heroku: установка, команды, .e и объект r, свои модули, ветки beta и dev.">
+<link rel="icon" type="image/webp" href="https://github.com/hikariatama/assets/raw/master/1326-command-window-line-flat.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root[data-theme="dark"]{
+  --bg:#141218; --panel:#211f26; --panel2:#2b2930;
+  --text:#e6e0e9; --mut:#cac4d0; --faint:#a29ca8;
+  --line:#49454f; --line2:#625d67;
+  --acc:#d0bcff; --acc-dim:#9580c7; --on-acc:#381e72;
+  --ok:#a6dfb3; --bad:#ffb4ab; --warn:#f1d497;
+  --code:#1d1b20; --code-line:#49454f;
+}
+:root[data-theme="light"]{
+  --bg:#fef7ff; --panel:#f3edf7; --panel2:#ece6f0;
+  --text:#1d1b20; --mut:#49454f; --faint:#625d67;
+  --line:#cac4d0; --line2:#938f99;
+  --acc:#6750a4; --acc-dim:#806bb3; --on-acc:#fff;
+  --ok:#166534; --bad:#b3261e; --warn:#8a5600;
+  --code:#f3edf7; --code-line:#cac4d0;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font:16px/1.68 Onest,"Segoe UI",Arial,sans-serif;
+  transition:background .25s,color .25s;
+}
+h1,h2,h3,h4,.lead,nav,.tt{font-family:Onest,"Segoe UI",Arial,sans-serif}
+code,kbd,pre,.mono{font-family:ui-monospace,"Cascadia Code","JetBrains Mono",Consolas,monospace}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:var(--acc);color:var(--on-acc)}
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-thumb{background:var(--line2);border-radius:9px}
+
+header{
+  position:fixed;inset:0 0 auto;height:58px;z-index:40;
+  display:flex;align-items:center;gap:12px;padding:0 16px;
+  background:color-mix(in srgb,var(--panel) 92%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+}
+.logo-plate{
+  width:36px;height:36px;flex:none;overflow:hidden;
+  display:grid;place-items:center;
+}
+.logo-plate img{width:100%;height:100%;display:block;object-fit:contain}
+:root[data-theme="light"] .logo-plate img,:root[data-theme="light"] .hero .plate img{filter:brightness(.72) saturate(1.25)}
+.tt{font-size:17px;font-weight:700;letter-spacing:.2px}
+.tt small{display:block;font-size:11px;color:var(--mut);font-weight:400;letter-spacing:.4px}
+.grow{flex:1}
+.branch-note{font-size:12px;color:var(--mut);white-space:nowrap}
+.branch-note b{color:var(--text)}
+.langs{display:flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px;font-size:12px;font-weight:700}
+.langs a{padding:4px 9px;border-radius:999px;color:var(--mut)}
+.langs a:hover{text-decoration:none;color:var(--text)}
+.langs a.active{color:var(--on-acc);background:var(--acc)}
+.ico{width:38px;height:38px;border:0;border-radius:8px;background:none;color:var(--mut);cursor:pointer;display:grid;place-items:center;transition:.15s}
+.ico:hover{background:var(--panel2);color:var(--text)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+.ico svg{width:19px;height:19px;fill:currentColor}
+
+.wrap{display:flex;padding-top:58px;min-height:100vh}
+nav{
+  width:250px;flex:none;position:sticky;top:58px;align-self:flex-start;
+  height:calc(100vh - 58px);overflow-y:auto;padding:22px 14px 50px;
+  border-right:1px solid var(--line);font-size:14.5px;
+}
+nav .grp{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--faint);margin:20px 10px 6px}
+nav a{display:block;padding:8px 14px;margin:2px 0;border-radius:999px;color:var(--mut);transition:.18s}
+nav a.sub{padding:4px 14px 4px 25px;font-size:13px;color:var(--faint)}
+nav a:hover{color:var(--text);background:var(--panel2);text-decoration:none}
+nav a.on{color:var(--acc);background:color-mix(in srgb,var(--acc) 17%,var(--panel))}
+#nav details{border:0;background:transparent;margin:0;padding:0}
+#nav summary{font-size:12px;color:var(--faint);font-weight:600;padding:5px 14px;cursor:pointer;border-radius:8px}
+#nav summary:hover{color:var(--text);background:var(--panel2)}
+#nav summary::after{content:"⌄";font-size:15px;transform:none;transition:transform .2s}
+#nav details[open] summary::after{transform:rotate(180deg)}
+main{flex:1;min-width:0;padding:40px 34px 120px}
+.page{max-width:780px;margin:0 auto}
+
+section{display:none}
+section.on{display:block;animation:in .28s ease both}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){section.on{animation:none}}
+
+h1{font-size:36px;line-height:1.18;margin:0 0 14px;font-weight:700;letter-spacing:-.02em}
+.lead{font-size:18px;color:var(--mut);margin:0 0 20px;line-height:1.6}
+h2{font-size:24px;font-weight:700;margin:42px 0 12px}
+h2[id]{scroll-margin-top:78px}
+h3{font-size:17px;font-weight:600;margin:26px 0 8px}
+p{margin:12px 0}
+ul,ol{padding-left:22px;margin:12px 0}
+li{margin:6px 0}
+li::marker{color:var(--acc-dim)}
+hr{border:0;border-top:1px solid var(--line);margin:40px 0}
+.toTop{font-size:13px;color:var(--faint)}
+.toTop:hover{color:var(--acc)}
+.jumps{display:flex;flex-wrap:wrap;gap:7px 14px;margin:18px 0 26px;font-size:14px}
+.jumps a{border-bottom:1px solid var(--line2);padding-bottom:1px}
+.subnav{display:flex;flex-wrap:wrap;gap:8px 16px;margin:18px 0 27px;font-size:14px}
+.subnav a{border-bottom:1px solid var(--line2);padding-bottom:2px}
+
+blockquote{
+  margin:16px 0;padding:12px 16px;border-left:3px solid var(--acc-dim);
+  background:var(--panel);border-radius:0 12px 12px 0;color:var(--text);
+}
+blockquote p{margin:6px 0}
+blockquote .bt{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.7px;color:var(--acc);display:block;margin-bottom:4px}
+blockquote.red{border-left-color:var(--bad)}
+blockquote.red .bt{color:var(--bad)}
+blockquote.green{border-left-color:var(--ok)}
+blockquote.green .bt{color:var(--ok)}
+
+.codetop{
+  display:flex;align-items:center;justify-content:space-between;margin:16px 0 -8px;
+  font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--faint);
+  font-family:Onest,"Segoe UI",Arial,sans-serif;
+}
+pre{
+  background:var(--code);border:1px solid var(--code-line);border-radius:10px;
+  padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.6;margin:12px 0;
+}
+pre code{background:none;border:none;padding:0;font-size:inherit}
+code{background:var(--code);border:1px solid var(--code-line);border-radius:5px;padding:1px 5px;font-size:.86em;color:var(--text)}
+.cp{border:1px solid var(--line2);background:var(--panel);color:var(--mut);border-radius:7px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:Onest,"Segoe UI",Arial,sans-serif;transition:.15s}
+.cp:hover{color:var(--text);border-color:var(--acc-dim)}
+.cp.ok{color:var(--ok);border-color:var(--ok)}
+
+.tw{overflow-x:auto;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th{text-align:left;padding:9px 12px;font-weight:600;color:var(--mut);border-bottom:2px solid var(--line2);font-size:12px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td code{white-space:nowrap}
+
+details{border:1px solid var(--line);border-radius:16px;margin:10px 0;background:var(--panel)}
+summary{cursor:pointer;padding:13px 16px;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";float:right;color:var(--acc);font-family:Onest,sans-serif;font-size:19px;line-height:1}
+details[open] summary::after{content:"–"}
+details[open]{border-color:var(--line2)}
+details .b{padding:0 16px 14px;animation:in .2s ease both}
+details .b>:first-child{margin-top:0}
+details .b>:last-child{margin-bottom:0}
+
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+@media(max-width:680px){.pc{grid-template-columns:1fr}}
+.pc>div{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.pc h4{margin:0 0 8px;font-size:14px;letter-spacing:.5px;text-transform:uppercase}
+.pc .plus h4{color:var(--ok)}
+.pc .minus h4{color:var(--bad)}
+.pc ul{margin:0;padding-left:19px}
+.pc li{margin:5px 0;font-size:14.5px}
+
+.hero{display:flex;gap:22px;align-items:flex-start;margin:6px 0 26px}
+.hero .plate{width:88px;height:88px;flex:none;display:grid;place-items:center;overflow:hidden}
+.hero .plate img{width:100%;height:100%;object-fit:contain}
+.hero .lead{margin:4px 0 8px}
+@media(max-width:560px){.hero{flex-direction:column}.hero .plate{width:64px;height:64px}}
+
+.pgr{display:flex;justify-content:space-between;gap:18px;margin-top:46px;padding-top:14px;border-top:1px solid var(--line);font-size:14px}
+.pgr a{color:var(--mut)}
+.pgr a:hover{color:var(--acc)}
+
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:13px;padding:22px 34px}
+footer a{color:var(--mut);text-decoration:underline}
+
+#hb{display:none}
+#scrim{display:none}
+@media(max-width:900px){
+  nav{position:fixed;z-index:35;top:58px;left:0;background:var(--panel);transform:translateX(-105%);transition:.22s;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+  body.open nav{transform:none}
+  body.open #scrim{display:block;position:fixed;inset:58px 0 0;background:rgba(0,0,0,.5);z-index:30}
+  #hb{display:grid}
+  main{padding:28px 18px 90px}
+  h1{font-size:29px}
+  .branch-note{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <button class="ico" id="hb" aria-label="Меню"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></button>
+  <div class="logo-plate"><img src="https://github.com/hikariatama/assets/raw/master/1326-command-window-line-flat.webp" alt="Heroku"></div>
+  <div class="tt">Heroku Handbook<small>юзербот для Telegram</small></div>
+  <span class="grow"></span>
+  <span class="branch-note">master <b>2.1.0</b> · dev <b>2.2.2</b></span>
+  <div class="langs" aria-label="Язык"><a class="active" href="index.html" lang="ru" aria-current="page" aria-label="Русская версия">RU</a><a href="en.html" lang="en" aria-label="English version">EN</a></div>
+  <button class="ico" id="th" aria-label="Тема"><svg viewBox="0 0 24 24"><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-15.5a.9.9 0 0 1 .9.9v1.8a.9.9 0 1 1-1.8 0V3.4a.9.9 0 0 1 .9-.9zm0 15.4a.9.9 0 0 1 .9.9v1.8a.9.9 0 1 1-1.8 0v-1.8a.9.9 0 0 1 .9-.9zM3.5 11.1h1.8a.9.9 0 1 1 0 1.8H3.5a.9.9 0 1 1 0-1.8zm15.2 0h1.8a.9.9 0 1 1 0 1.8h-1.8a.9.9 0 1 1 0-1.8zM5.6 4.7l1.3 1.3a.9.9 0 1 1-1.3 1.3L4.3 6a.9.9 0 0 1 1.3-1.3zm12.5 12.5l1.3 1.3a.9.9 0 1 1-1.3 1.3l-1.3-1.3a.9.9 0 0 1 1.3-1.3zM5.6 19.3A.9.9 0 0 1 4.3 18l1.3-1.3a.9.9 0 0 1 1.3 1.3zM18.1 6.8a.9.9 0 0 1-1.3-1.3l1.3-1.3a.9.9 0 0 1 1.3 1.3z"/></svg></button>
+</header>
+<div id="scrim"></div>
+
+<div class="wrap">
+<nav id="nav">
+  <div class="grp">Начало</div>
+  <a href="#about">О Heroku</a>
+  <a href="#install">Установка</a>
+  <a href="#login">Первый запуск</a>
+  <a href="#storage">Файлы и перенос</a>
+  <a href="#basics">Основы</a>
+  <a href="#daily">Повседневные задачи</a>
+  <div class="grp">Справка</div>
+  <a href="#cmds">Все команды</a>
+  <details><summary>Подразделы команд</summary>
+    <a class="sub" href="#cmd-core">Основное и настройки</a>
+    <a class="sub" href="#cmd-loader">Загрузка модулей</a>
+    <a class="sub" href="#cmd-updates">Обновления</a>
+    <a class="sub" href="#cmd-code">Код и терминал</a>
+    <a class="sub" href="#cmd-backups">Резервные копии</a>
+    <a class="sub" href="#cmd-security">Доступ и права</a>
+    <a class="sub" href="#cmd-presets">Пресеты master</a>
+  </details>
+  <a href="#inline">Инлайн и права</a>
+  <a href="#r">.e и объект r</a>
+  <details><summary>Подразделы r</summary>
+    <a class="sub" href="#r-fields">Поля сообщения</a>
+    <a class="sub" href="#r-media">Медиа и файлы</a>
+    <a class="sub" href="#r-actions">Методы r</a>
+    <a class="sub" href="#r-examples">Примеры .e</a>
+  </details>
+  <a href="#module">Свой модуль</a>
+  <div class="grp">Ветки</div>
+  <a href="#beta">Beta</a>
+  <a href="#devb">Ветка dev</a>
+  <div class="grp">Помощь</div>
+  <a href="#faq">Проблемы</a>
+</nav>
+
+<main><div class="page" id="pages">
+<section id="about">
+  <div class="hero">
+    <div class="plate"><img src="https://github.com/hikariatama/assets/raw/master/1326-command-window-line-flat.webp" alt="Heroku" width="66" height="66"></div>
+    <div>
+      <h1>Heroku Handbook</h1>
+  <p class="lead">Установка, первый вход, встроенные команды и Python через <code>.e</code>. Отдельно разобраны ветки master, beta и dev.</p>
+    </div>
+  </div>
+
+  <h2>Что такое юзербот</h2>
+  <p>Обычного бота создают через @BotFather, и он пишет от своего имени. Юзербот устроен иначе: программа входит в Telegram под вашим аккаунтом и реагирует на ваши же сообщения. Например, <code>.ping</code> покажет задержку. Команды можно отправлять в Избранном, личке или группе, но доступ зависит от прав в конкретном чате.</p>
+  <p>Heroku это один из таких юзерботов, форк проекта Hikka. Внутри стоит библиотека herokutl, форк Telethon с новым слоем протокола Telegram. У Heroku есть совместимость со многими модулями Hikka, FTG и GeekTG: импорты <code>telethon</code> и <code>hikka</code> внутри модулей она подменяет на свои. Это помогает со старым кодом, но не обещает работу каждого модуля без правок.</p>
+
+  <h2>Что она умеет из коробки</h2>
+  <ul>
+    <li>Команды с точкой в любом чате: пинг, инфо, перевод, калькулятор, код на Python прямо в сообщении</li>
+    <li>Модули: маленькие программы, добавляющие свои команды. Ищутся через <code>.dlmod</code> по имени или передаются Python-файлом через <code>.loadmod</code></li>
+    <li>Меню и настройки на инлайн-кнопках через персонального бота, которого Heroku создает сама</li>
+    <li>Резервные копии базы и модулей, автообновления, логи с цензурой секретов</li>
+    <li>Права доступа: можно пустить друга к части команд или дать ему совладение</li>
+    <li>Несколько языков интерфейса, включая русский</li>
+  </ul>
+
+  <h2>Где живут настройки</h2>
+  <p>При обычной установке после первого входа рядом с кодом появляются <code>config.json</code> с API-ключами, папка <code>sessions/</code> с Telegram-сессией, <code>config-&lt;id&gt;.json</code> с настройками аккаунта и <code>loaded_modules/</code> со сторонними модулями. В Docker данные лежат в <code>/data</code>; путь можно изменить флагом <code>--data-root</code>. Копируй их только в защищенное место.</p>
+
+  <h2>Честно о минусах</h2>
+  <ul>
+    <li>Пока выключен сервер или компьютер, бот не отвечает. Ему нужно место, где он крутится постоянно</li>
+    <li>Сторонний модуль это чужой код рядом с вашей сессией. Ставите наугад, рискуете аккаунтом и данными</li>
+    <li>Telegram формально не поощряет автоматизацию аккаунтов. Пользуйтесь головой, не спамьте</li>
+  </ul>
+
+  <blockquote>
+    <span class="bt">Главное правило</span>
+    <p>В папке <code>sessions</code> хранится авторизация Telegram, а в <code>config*.json</code> настройки и ключи. Не отправляй эти файлы посторонним и не добавляй их в публичный репозиторий: файл сессии позволяет подключаться к аккаунту без нового кода подтверждения.</p>
+  </blockquote>
+
+  <h2>Как читать этот handbook</h2>
+  <p>Начни с установки и первого входа, затем загляни в основы и справочник команд. Отдельные страницы посвящены файлам, повседневным задачам, инлайн-боту и API сообщения <code>r</code>. Страницы beta и dev помогают выбрать ветку перед переключением.</p>
+  <p>Все команды в тексте показаны с точкой, потому что она префикс по умолчанию. Смените префикс, и везде подставляйте свой.</p>
+
+  <div class="pgr"><a href="#install">Установка →</a><span></span></div>
+</section>
+
+<section id="install">
+  <h1>Установка</h1>
+  <p class="lead">Клонировать, поставить зависимости, запустить. Занимает минут десять, почти всё это ожидание pip.</p>
+
+  <h2>Где вообще держать бота</h2>
+  <p>Heroku это процесс на вашей машине. Закрыли терминал, выключили ПК, перезагрузили VPS, бот замолчал. Поэтому первый вопрос не «как ставить», а «где он будет жить».</p>
+  <div class="tw"><table>
+    <thead><tr><th>Место</th><th>Кому подходит</th><th>Нюанс</th></tr></thead>
+    <tbody>
+      <tr><td>VPS с Ubuntu</td><td>Всем, кто хочет бот 24/7</td><td>Стоит от пары долларов, понадобится ssh</td></tr>
+      <tr><td>Домашний ПК</td><td>Попробовать и поиграться</td><td>Работает пока не выключен</td></tr>
+      <tr><td>Raspberry Pi</td><td>Постоянный тихий хост</td><td>Понадобится отдельное устройство</td></tr>
+      <tr><td>Android, Termux</td><td>Телефон всегда под рукой</td><td>Система выгружает процесс, отключите оптимизацию батареи</td></tr>
+      <tr><td>Windows через WSL</td><td>Запустить на своем компьютере с Windows</td><td>README проекта помечает этот путь как нестабильный</td></tr>
+      <tr><td>Docker</td><td>У кого всё в контейнерах</td><td>Данные в volume, чуть сложнее первый вход</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Ubuntu и Debian</h2>
+  <p>Самый распространенный путь. Скопируйте весь блок одной командой:</p>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>sudo apt update &amp;&amp; sudo apt install git python3 python3-venv -y
+git clone https://github.com/coddrago/Heroku
+cd Heroku
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 -m heroku</code></pre>
+  <p>Первая строка ставит git и Python, вторая скачивает репозиторий. Затем создается виртуальное окружение, отдельная папка с библиотеками Heroku. Последняя строка запускает программу.</p>
+
+  <h2>Fedora</h2>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>sudo dnf install git python3 -y
+git clone https://github.com/coddrago/Heroku &amp;&amp; cd Heroku
+python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+python3 -m heroku</code></pre>
+
+  <h2>Arch Linux</h2>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>sudo pacman -S git python --needed
+git clone https://github.com/coddrago/Heroku &amp;&amp; cd Heroku
+python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+python3 -m heroku</code></pre>
+
+  <h2>Установщик install.sh</h2>
+  <p>Ленивый вариант, который сам определяет систему и делает всё перечисленное. Понимает apt, pacman, dnf, brew и Termux. Требует Python 3.10 или новее, иначе откажется работать.</p>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>git clone https://github.com/coddrago/Heroku
+cd Heroku
+bash install.sh</code></pre>
+  <p>Если установка упала, скрипт выведет содержимое <code>heroku-install.log</code> в терминал. При успешной установке он удаляет этот файл. Переменные <code>HEROKU_REPO_URL</code> и <code>HEROKU_VENV_DIR</code> позволяют подменить адрес репозитория и путь к окружению.</p>
+
+  <h2>Android через Termux</h2>
+  <p>Ставьте Termux из F-Droid, сборка из Google Play устарела. Внутри выполняется тот же <code>install.sh</code>, пакеты он поставит через <code>pkg</code>. Дальше главное: откройте настройки Android, найдите Termux и отключите для него экономию батареи, иначе система будет убивать процесс, и бот начнет пропадать из сети.</p>
+
+  <h2>Docker</h2>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>git clone https://github.com/coddrago/Heroku
+cd Heroku
+bash docker.sh</code></pre>
+  <p>Скрипт при необходимости поставит docker и docker-compose, соберет образ и запустит первый вход в интерактивном режиме. Для постоянной работы после входа: <code>docker-compose up -d</code>. Данные живут в томе <code>worker</code>, смонтированном в <code>/data</code>, поэтому переживают пересоздание контейнера.</p>
+  <p>Для beta или dev укажи ветку при сборке: <code>docker-compose build --build-arg HEROKU_REF=dev</code>. Dockerfile принимает этот аргумент, после сборки запусти контейнер заново.</p>
+
+  <h2>Windows</h2>
+  <p>Нативной версии нет. Официальный путь это WSL: в PowerShell от администратора выполните <code>wsl --install -d Ubuntu-22.04</code>, перезагрузитесь, откройте Ubuntu и дальше действуйте как в разделе про Ubuntu.</p>
+
+  <h2>Про root</h2>
+  <p>Программа предупреждает о запуске под root и предлагает перейти на обычного пользователя. Модули исполняют Python-код, и под root они получат права на весь сервер. Создать отдельного пользователя можно так:</p>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>adduser heroku
+usermod -aG sudo heroku
+su - heroku</code></pre>
+  <p>И ставьте бота уже под ним. Если root действительно нужен, к запуску добавляется <code>--root</code>. В Docker запуск под root уже предусмотрен командой контейнера.</p>
+
+  <h2>Как запускать после перезагрузки</h2>
+  <p>Две строки из папки с ботом:</p>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>source .venv/bin/activate
+python3 -m heroku</code></pre>
+  <p>Чтобы бот жил после закрытия терминала, запустите его внутри screen:</p>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>sudo apt install screen -y
+screen -S heroku
+source .venv/bin/activate
+python3 -m heroku</code></pre>
+  <p>Затем <code>Ctrl+A</code> и <code>D</code>, окно отсоединится, процесс останется. Вернуться: <code>screen -r heroku</code>. В Docker вместо этого просто <code>docker-compose up -d</code>.</p>
+
+  <blockquote class="green">
+    <span class="bt">Готово, если</span>
+    <p>В терминале нарисован ASCII-логотип с версией и строкой про префикс. Дальше смело идите в раздел про первый запуск.</p>
+  </blockquote>
+
+  <div class="pgr"><a href="#about">← О Heroku</a><a href="#login">Первый запуск →</a></div>
+</section>
+
+<section id="login">
+  <h1>Первый запуск</h1>
+  <p class="lead">Программа задаст пять вопросов. Вот что каждый из них значит и что отвечать.</p>
+
+  <h2>1. Цветной ли терминал</h2>
+  <p>Появится строка про быструю лису и вопрос, цветная ли она. Ответьте <code>y</code>, если видите цвета, иначе <code>n</code>. Влияет только на раскраску вывода.</p>
+
+  <h2>2. API ID и API hash</h2>
+  <p>Два ключа, без которых Heroku не войдет в Telegram. Берутся бесплатно на официальном сайте.</p>
+  <ol>
+    <li>Зайдите на <a href="https://my.telegram.org">my.telegram.org</a>, войдите по номеру. Код придет в чат Telegram, не по СМС</li>
+    <li>Откройте пункт <b>API development tools</b></li>
+    <li>Создайте приложение. Название и короткое имя любые, например <code>myheroku</code>, платформа Other</li>
+    <li>Со страницы скопируйте <b>App api_id</b> (число) и <b>App api_hash</b> (строка из 32 символов)</li>
+  </ol>
+  <p>Вставьте их, когда программа попросит. Она проверит формат: id должен быть числом, hash строкой из 32 hex-символов. Значения сохранятся в <code>config.json</code>, повторно их вводить не придется.</p>
+
+  <blockquote class="red">
+    <span class="bt">Секрет</span>
+    <p>API hash не показывайте в скриншотах и не отдавайте никому под предлогом «а мне для настройки».</p>
+  </blockquote>
+
+  <h2>3. Как войти: QR или телефон</h2>
+  <p>Вопрос <code>Use QR code? [y/N]</code>. Оба способа одинаково рабочие.</p>
+  <ul>
+    <li><b>QR.</b> В терминале нарисуется код. На телефоне: Настройки, Устройства, Привязать устройство, навести камеру. Код сам перерисовывается каждые десять секунд. Удобно, когда телефон рядом с экраном</li>
+    <li><b>Телефон.</b> Номер в международном формате, например <code>+79001234567</code>, без пробелов и скобок. Затем код из чата Telegram. Способ удобнее по ssh, когда камерой никуда не наведешь</li>
+  </ul>
+  <p>После входа сессия сохраняется в <code>sessions/heroku-&lt;ваш_id&gt;.session</code>. Все последующие запуски подхватывают её сами.</p>
+
+  <h2>4. Пароль двухфакторки</h2>
+  <p>Если включена двухэтапная проверка, программа спросит облачный пароль и покажет вашу подсказку в скобках. Символы при вводе не отображаются, так и должно быть. Печатайте и жмите Enter.</p>
+
+  <h2>5. Имя инлайн-бота</h2>
+  <p>Heroku настроит через @BotFather персонального бота для меню и кнопок. Можно просто нажать Enter, имя придумается автоматически. Свое имя должно заканчиваться на <code>bot</code>, программа проверит, не занято ли оно. На разных путях входа запрос имени появляется в разный момент; при QR он может не появиться вообще, тогда Heroku выберет имя автоматически.</p>
+  <p>Зачем он нужен: через него работают инлайн-формы, галереи и кнопки подтверждения. Если бот не настроился, эти части интерфейса могут не открываться. Позже имя и токен меняются командами <code>.ch_heroku_bot</code> и <code>.ch_bot_token</code>.</p>
+
+  <h2>Что произойдет после входа</h2>
+  <ul>
+    <li>Создается приватный канал <code>heroku-userbot</code>. Это служебное хранилище для бэкапов, логов и медиа галерей. Не удаляйте его и не зовите туда людей</li>
+    <li>Персональный инлайн-бот может прислать приветствие с выбором языка и отдельное предложение настроить период резервных копий</li>
+    <li>В терминале напечатается логотип: версия, хеш сборки, статус обновления и текущий префикс</li>
+  </ul>
+
+  <blockquote class="green">
+    <span class="bt">Проверка</span>
+    <p>Откройте Избранное и отправьте <code>.ping</code>. Сообщение превратилось в карточку с цифрами, значит всё работает.</p>
+  </blockquote>
+
+  <div class="pgr"><a href="#install">← Установка</a><a href="#storage">Файлы и перенос →</a></div>
+</section>
+
+<section id="storage">
+  <h1>Файлы, бэкап и перенос</h1>
+  <p class="lead">После входа Heroku хранит авторизацию и настройки на диске. Вот что стоит сохранить перед переездом, а что можно поставить заново.</p>
+
+  <h2>Что лежит в папке Heroku</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Путь</th><th>Содержание</th><th>Переносить?</th></tr></thead>
+    <tbody>
+      <tr><td><code>config.json</code></td><td>API ID, API hash и имя устройства</td><td>Да, держи закрытым</td></tr>
+      <tr><td><code>sessions/heroku-&lt;id&gt;.session</code></td><td>Действующая сессия Telegram</td><td>Да, если нужен вход без нового кода</td></tr>
+      <tr><td><code>config-&lt;id&gt;.json</code></td><td>База настроек и данных модулей этого аккаунта</td><td>Да</td></tr>
+      <tr><td><code>loaded_modules/</code></td><td>Загруженные Python-модули</td><td>Да, если они ставились файлами</td></tr>
+      <tr><td><code>heroku.log</code></td><td>Локальный файл событий и ошибок</td><td>Необязательно</td></tr>
+      <tr><td><code>.venv/</code></td><td>Установленные зависимости Python</td><td>Нет, создай окружение на новом сервере</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Перенос на другой сервер</h2>
+  <ol>
+    <li>Останови Heroku на старой машине. Одна и та же сессия не должна работать одновременно в двух местах</li>
+    <li>Скопируй папку проекта вместе с <code>config.json</code>, <code>sessions/</code>, <code>config-&lt;id&gt;.json</code> и <code>loaded_modules/</code> по защищённому соединению</li>
+    <li>На новом сервере установи Python, создай <code>.venv</code> и поставь зависимости из <code>requirements.txt</code></li>
+    <li>Запусти <code>python3 -m heroku</code> и проверь <code>.ping</code> в Избранном</li>
+  </ol>
+  <p>Через <code>.backupall</code> можно сохранить базу и модули в служебный канал. Этот архив не заменяет файл сессии и API-ключи. Если переносишь только бэкап, Telegram попросит войти заново.</p>
+
+  <h2>Где искать резервные копии</h2>
+  <p>Heroku создаёт приватный канал <code>heroku-userbot</code> с темой Backups. Команды <code>.backupdb</code>, <code>.backupmods</code> и <code>.backupall</code> сохраняют там файлы и отвечают ссылкой. Если тема недоступна, проверь ответ самой команды: способы отправки отличаются в зависимости от типа бэкапа.</p>
+
+  <blockquote class="red"><span class="bt">Не пересылай сессию</span><p>Архив сессии и база аккаунта содержат личные данные. Для помощи в чате поддержки обычно нужен лог ошибки, а не <code>sessions/</code> и не <code>config.json</code>.</p></blockquote>
+  <div class="pgr"><a href="#login">← Первый запуск</a><a href="#basics">Основы →</a></div>
+</section>
+
+<section id="basics">
+  <h1>Основы</h1>
+  <p class="lead">Как подаются команды, куда их писать и что делать, если точка мешает переписке.</p>
+
+  <h2>Анатомия команды</h2>
+  <p>Команда это обычное сообщение, начинающееся с префикса. По умолчанию это точка. Дальше идет имя команды, потом аргументы через пробел.</p>
+  <div class="codetop"><span>структура</span></div>
+  <pre><code>.tr ru Hello world
+ ^  ^  ^^^^^^^^^^^
+ |  |  аргументы
+ |  имя команды
+ префикс</code></pre>
+  <p>Имена команд регистрируются в нижнем регистре; если сомневаешься, пиши так, как показано в <code>.help</code>. В справке обязательные аргументы пишут в угловых скобках <code>&lt;так&gt;</code>, необязательные в квадратных <code>[так]</code>.</p>
+
+  <h2>Куда писать</h2>
+  <p>Для первых команд удобно Избранное: там ты никому не мешаешь. В группах команды тоже работают, если у аккаунта есть нужные права. Исходное сообщение команды там могут успеть увидеть другие участники.</p>
+
+  <h2>Реплай как аргумент</h2>
+  <p>Некоторые команды берут объект для работы из реплая. Ответьте на чей-то текст и напишите <code>.tr ru</code>: переведется именно он, аргументы не нужны. Команда <code>.e</code> дает доступ к сообщению из реплая через переменную <code>r</code>.</p>
+
+  <h2>Сменить префикс</h2>
+  <p>Точка в начале предложения иногда запускает команду случайно. Меняется одной командой:</p>
+  <div class="codetop"><span>в любом чате</span></div>
+  <pre><code>.setprefix !</code></pre>
+  <p>После этого команды можно писать с <code>!</code> вместо точки. Обычно префикс состоит из одного символа; длинный разрешается настройкой <code>allow_nonstandart_prefixes</code> через <code>.config</code>. Забыли, какой поставили: напишите своему инлайн-боту <code>/profile</code>, он покажет префикс и даст кнопку сброса на точку.</p>
+
+  <h2>Алиасы</h2>
+  <p>Короткая кличка для команды, которую вы часто пишете:</p>
+  <div class="codetop"><span>в любом чате</span></div>
+  <pre><code>.addalias п ping
+.п
+.aliases
+.delalias п</code></pre>
+  <p>Первая строка создает алиас, вторая уже работает как <code>.ping</code>. Третья показывает все ваши алиасы, четвертая удаляет один, а <code>.delalias -c</code> чистит весь список.</p>
+
+  <h2>Выключать ненужное</h2>
+  <p>Команда или модуль надоедают, а удалять жалко: <code>.togglecmd имя_команды</code> гасит одну команду, <code>.togglemod ИмяМодуля</code> целый модуль. Те же команды возвращают всё обратно. Имя модуля берется из <code>.help</code>.</p>
+
+  <blockquote class="red">
+    <span class="bt">Две команды, с которыми не шутят</span>
+    <p><code>.e</code> исполняет Python, <code>.terminal</code> выполняет команды на сервере. Даже одна своя строка может изменить данные или удалить файл, а чужой код тем более не стоит запускать, пока не разобрался, что он делает.</p>
+  </blockquote>
+
+  <div class="pgr"><a href="#storage">← Файлы и перенос</a><a href="#daily">Повседневные задачи →</a></div>
+</section>
+
+<section id="daily">
+  <h1>Повседневные задачи</h1>
+  <p class="lead">Не надо заучивать весь список команд. Вот несколько сценариев, с которыми проще освоиться после первого <code>.ping</code>.</p>
+
+  <h2>Найти нужную команду</h2>
+  <p>Вызови <code>.help</code>, выбери модуль и посмотри его команды. Например, <code>.help Translator</code> покажет переводчик. Поставленные сторонние модули появятся в том же списке. Если знаешь команду, но не помнишь синтаксис, справка модуля подскажет аргументы.</p>
+
+  <h2>Перевести сообщение</h2>
+  <p>Ответь на сообщение и отправь <code>.tr ru</code>. Код языка после команды указывает, на какой язык переводить. Для собственного текста напиши <code>.tr en Привет</code>. Провайдер Telegram или Google выбирается в настройках Translator через <code>.config</code>.</p>
+
+  <h2>Поставить модуль</h2>
+  <p>После проверки от загрузчика команда <code>.dlmod</code> покажет список имен, <code>.dlmod ИмяМодуля</code> попробует установить выбранный. Если прислали Python-файл, ответь на него командой <code>.loadmod</code>. Ссылку на файл как аргумент <code>.loadmod</code> не принимает. Появился ли модуль, проверь через <code>.help</code>.</p>
+
+  <h2>Посмотреть ошибку</h2>
+  <p>Напиши <code>.logs</code> и выбери Error в меню. Если нужны подробности, выбери Debug. Команда <code>.logs debug -f</code> отправит его без отдельного предупреждения о приватных данных. Перед тем как передать файл кому-то ещё, просмотри содержимое.</p>
+
+  <h2>Обновить и сохранить данные</h2>
+  <p>Сначала <code>.backupall</code>, затем <code>.update</code>. На dev бот предложит подтвердить обновление кнопкой, если инлайн-бот работает. На изученном master обработка подтверждения устроена иначе; смотри ответ команды, а не рассчитывай на одинаковый экран. Если нужна только перезагрузка без обновления, есть <code>.restart</code>.</p>
+
+  <h2>Остановить мешающий модуль</h2>
+  <p><code>.togglemod ИмяМодуля</code> отключит его, повторная команда включит обратно. Если мешает только слежение за сообщениями в одном чате, попробуй <code>.watcherbl ИмяМодуля</code> прямо в этом чате. Для одной команды есть <code>.togglecmd имя</code>.</p>
+
+  <h2>Дать доступ другому человеку</h2>
+  <p>Для одной команды на ограниченное время используй точечное правило, например <code>.tsec user @username ping 1h</code>. Для более широких прав есть <code>.security</code> и группы безопасности. <code>.owneradd</code> выдаёт совладение, поэтому для простого доступа к пингу оно избыточно.</p>
+
+  <div class="pgr"><a href="#basics">← Основы</a><a href="#cmds">Все команды →</a></div>
+</section>
+
+<section id="cmds">
+  <h1>Команды</h1>
+  <p class="lead">Это встроенные команды Heroku на ветке master. Команды загруженных модулей сюда не входят, смотри их через <code>.help</code>. Суффиксы в скобках это алиасы, то есть короткие имена той же команды.</p>
+  <div class="jumps" aria-label="По разделам команд">
+    <a href="#cmd-core">Основное</a><a href="#cmd-loader">Модули</a><a href="#cmd-updates">Обновление</a><a href="#cmd-code">Код и терминал</a><a href="#cmd-backups">Бэкапы</a><a href="#cmd-security">Права</a><a href="#cmd-presets">Пресеты</a>
+  </div>
+
+  <h2 id="cmd-core">Главное и настройки</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.heroku</code></td><td>Покажет версию Heroku, herokutl и информацию о сборке</td></tr>
+      <tr><td><code>.setprefix &lt;знак&gt;</code></td><td>Сменит префикс команд. По умолчанию это точка</td></tr>
+      <tr><td><code>.aliases</code></td><td>Покажет пользовательские алиасы</td></tr>
+      <tr><td><code>.addalias &lt;короткое&gt; &lt;команда&gt;</code></td><td>Добавит алиас. Например, <code>.addalias п ping</code> даст команду <code>.п</code></td></tr>
+      <tr><td><code>.delalias &lt;имя&gt;</code></td><td>Удалит алиас. <code>-c</code> или <code>--clear</code> удалит все</td></tr>
+      <tr><td><code>.blacklist [чат] [модуль]</code></td><td>Запретит модулю или всем модулям отвечать в чате</td></tr>
+      <tr><td><code>.unblacklist &lt;чат_id&gt;</code></td><td>Снимет блокировку с чата</td></tr>
+      <tr><td><code>.blacklistuser [пользователь]</code></td><td>Запретит пользователю вызывать команды</td></tr>
+      <tr><td><code>.unblacklistuser [пользователь]</code></td><td>Снимет этот запрет</td></tr>
+      <tr><td><code>.togglecmd &lt;команда&gt;</code></td><td>Выключит или включит отдельную команду</td></tr>
+      <tr><td><code>.togglemod &lt;модуль&gt;</code></td><td>Выключит или включит весь модуль</td></tr>
+      <tr><td><code>.clearmodule &lt;модуль&gt;</code></td><td>Сотрет данные конкретного модуля из базы</td></tr>
+      <tr><td><code>.cleardb</code></td><td>Сбросит всю базу настроек. Перед сбросом бот спросит подтверждение</td></tr>
+      <tr><td><code>.installation</code></td><td>Покажет краткое руководство по установке прямо в Telegram</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Справка и поиск</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.help</code></td><td>Покажет установленные модули и их команды</td></tr>
+      <tr><td><code>.help &lt;модуль&gt;</code></td><td>Покажет команды и описание выбранного модуля</td></tr>
+      <tr><td><code>.helphide &lt;модуль&gt;</code></td><td>Скроет или вернет модуль в общем списке справки</td></tr>
+      <tr><td><code>.support</code></td><td>Пришлет ссылки на чаты поддержки</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="cmd-loader">Загрузчик модулей</h2>
+  <p>Перед первым <code>.dlmod</code> и <code>.loadmod</code> нужно пройти короткую проверку через инлайн-бота. Пока она не пройдена, загрузчик откажет.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.dlmod</code> (<code>.dlm</code>)</td><td>Без аргументов покажет каталоги доступных модулей; с именем найдет и установит модуль из репозитория</td></tr>
+      <tr><td><code>.dlmall</code></td><td>Предложит установить все модули из выбранного репозитория</td></tr>
+      <tr><td><code>.loadmod</code> (<code>.lm</code>)</td><td>Загрузит Python-файл из реплая или из вложения к самой команде</td></tr>
+      <tr><td><code>.unloadmod &lt;класс&gt;</code> (<code>.ulm</code>)</td><td>Выгрузит модуль. Имя класса смотри в <code>.help</code></td></tr>
+      <tr><td><code>.clearmodules</code></td><td>Удалит все загруженные сторонние модули после подтверждения</td></tr>
+      <tr><td><code>.addrepo &lt;ссылка&gt;</code></td><td>Добавит репозиторий модулей, если по адресу доступен непустой <code>full.txt</code></td></tr>
+      <tr><td><code>.delrepo</code></td><td>Удалит репозиторий из списка</td></tr>
+      <tr><td><code>.ml &lt;модуль&gt;</code></td><td>Отправит исходный файл модуля</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Информация и проверка работы</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.info</code></td><td>Покажет карточку с информацией о боте. Текст и баннер настраиваются в модуле</td></tr>
+      <tr><td><code>.ubinfo</code></td><td>Объяснит, что такое Heroku</td></tr>
+      <tr><td><code>.ping</code></td><td>Покажет задержку, аптайм и информацию о системе</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Дополнительные настройки и ватчеры</h2>
+  <p>Ватчер запускается при сообщениях сам, без команды. Если такой модуль мешает в конкретном чате, отключи его адресно через <code>.watcherbl</code>, а не удаляй весь модуль. NoNick разрешает избранным пользователям, чатам или командам обходиться без упоминания юзербота там, где оно обычно требуется. Переключатель Grep включает фильтр вывода команд через <code>| grep слово</code>, а InlineLogs управляет показом traceback прямо в чате при ошибке.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.settings</code></td><td>Откроет меню общих переключателей: NoNick, Grep, InlineLogs, предложения подписки, перезапуск и обновление</td></tr>
+      <tr><td><code>.watchers</code></td><td>Покажет активные ватчеры и отключенные</td></tr>
+      <tr><td><code>.watcherbl &lt;модуль&gt;</code></td><td>Выключит ватчер модуля в текущем чате; повторный вызов включит обратно</td></tr>
+      <tr><td><code>.watcher &lt;модуль&gt;</code></td><td>Включит или выключит ватчер целиком. Флаги <code>-c</code>, <code>-p</code>, <code>-o</code>, <code>-i</code> ограничивают его чатами, личкой, исходящими или входящими</td></tr>
+      <tr><td><code>.nonickuser</code></td><td>В ответ на сообщение переключит NoNick для его автора</td></tr>
+      <tr><td><code>.nonickchat</code></td><td>Переключит NoNick в текущем групповом чате</td></tr>
+      <tr><td><code>.nonickcmd &lt;команда&gt;</code></td><td>Переключит NoNick для команды</td></tr>
+      <tr><td><code>.nonickusers</code>, <code>.nonickchats</code>, <code>.nonickcmds</code></td><td>Покажут соответствующие списки</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="cmd-updates">Обновление</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.update</code></td><td>Обновит Heroku из текущей ветки. На dev откроет подтверждение, если работает инлайн-бот</td></tr>
+      <tr><td><code>.update -f</code></td><td>Флаг обновления без обычного подтверждения на dev; на изученном master подтверждение устроено иначе</td></tr>
+      <tr><td><code>.autoupdate</code></td><td>Переключит автоматическую установку обновлений</td></tr>
+      <tr><td><code>.rollback</code></td><td>Откатит последнее обновление</td></tr>
+      <tr><td><code>.restart</code></td><td>Перезапустит Heroku, настройки сохранятся</td></tr>
+      <tr><td><code>.ubstop</code></td><td>Остановит Heroku</td></tr>
+      <tr><td><code>.changelog</code></td><td>Покажет изменения последнего обновления</td></tr>
+      <tr><td><code>.source</code></td><td>Пришлет ссылку на исходный код</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="cmd-code">Исполнение кода</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Язык</th><th>Что требуется</th></tr></thead>
+    <tbody>
+      <tr><td><code>.e</code> (<code>.eval</code>)</td><td>Python</td><td>Есть в комплекте, отдельный компилятор не нужен</td></tr>
+      <tr><td><code>.ecpp</code></td><td>C++</td><td><code>g++</code></td></tr>
+      <tr><td><code>.ec</code></td><td>C</td><td><code>gcc</code></td></tr>
+      <tr><td><code>.ers</code></td><td>Rust</td><td><code>rustc</code></td></tr>
+      <tr><td><code>.eg</code></td><td>Go</td><td><code>go</code></td></tr>
+      <tr><td><code>.enode</code></td><td>JavaScript</td><td><code>node</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>На команды с компиляторами можно ответить реплаем с кодом. Таймаут компиляции до 30 секунд, исполнения обычно 10 секунд. Подробнее про Python и реплай в <a href="#r">следующем разделе</a>.</p>
+
+  <h2>Терминал</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.terminal &lt;команда&gt;</code> (<code>.exec</code>)</td><td>Выполнит команду shell на машине, где работает Heroku</td></tr>
+      <tr><td><code>.terminate</code></td><td>Отправит процессу SIGTERM. Используй реплай на сообщение с его выводом</td></tr>
+      <tr><td><code>.terminate -f</code></td><td>Принудительно убьет процесс</td></tr>
+      <tr><td>Инлайн <code>exec</code></td><td>Запустит команду через инлайн-режим бота</td></tr>
+    </tbody>
+  </table></div>
+  <p>Для некоторых опасных команд есть блокировка: вместо запуска Heroku покажет предупреждение. Это не полная проверка shell-кода, поэтому незнакомые команды всё равно не вставляй.</p>
+
+  <h2>Перевод и язык интерфейса</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.tr [язык] &lt;текст&gt;</code></td><td>Переведет текст или сообщение из реплая. Есть провайдеры Telegram и Google</td></tr>
+      <tr><td><code>.setlang ru</code></td><td>Поставит русский язык интерфейса. Есть также en, ua, de, jp и шуточные пакеты</td></tr>
+      <tr><td><code>.dllangpack &lt;ссылка&gt;</code></td><td>Добавит внешний языковой пакет</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Логи и диагностика</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.logs</code></td><td>Покажет меню уровней логов и отправит выбранный лог файлом</td></tr>
+      <tr><td><code>.logs debug -f</code></td><td>Выгрузит debug-лог без предупреждения о приватном содержимом; у одного <code>.logs -f</code> не указан уровень</td></tr>
+      <tr><td><code>.clearlogs</code></td><td>Очистит буферы обработчиков логов; не рассчитывай, что команда удалит файл <code>heroku.log</code></td></tr>
+      <tr><td><code>.suspend &lt;секунды&gt;</code></td><td>Поставит процесс на паузу на указанное время</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="cmd-backups">Резервные копии</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.backupdb</code></td><td>Сохранит базу настроек</td></tr>
+      <tr><td><code>.restoredb</code></td><td>Восстановит базу из файла в реплае</td></tr>
+      <tr><td><code>.backupmods</code></td><td>Сохранит установленные модули</td></tr>
+      <tr><td><code>.restoremods</code></td><td>Восстановит модули из файла в реплае</td></tr>
+      <tr><td><code>.backupall</code></td><td>Сохранит и базу, и модули</td></tr>
+      <tr><td><code>.restoreall</code></td><td>Восстановит полный комплект</td></tr>
+      <tr><td><code>.set_backup_period &lt;часы&gt;</code></td><td>Задаст интервал автоматического бэкапа. Например, <code>24</code> это раз в сутки</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="cmd-security">Права и безопасность</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.security [команда]</code></td><td>Откроет глобальную настройку прав или права выбранной команды</td></tr>
+      <tr><td><code>.inlinesec [команда]</code></td><td>Настроит права для инлайн-команды</td></tr>
+      <tr><td><code>.querysec</code></td><td>Разрешит или запретит чужим пользоваться инлайн-запросами</td></tr>
+      <tr><td><code>.owneradd [-f] [-n] &lt;пользователь&gt;</code></td><td>Добавит совладельца. <code>-f</code> пропускает подтверждение, <code>-n</code> включает доступ к NoNick</td></tr>
+      <tr><td><code>.ownerrm &lt;пользователь&gt;</code></td><td>Уберет совладельца</td></tr>
+      <tr><td><code>.ownerlist</code></td><td>Покажет совладельцев</td></tr>
+      <tr><td><code>.newsgroup &lt;имя&gt;</code></td><td>Создаст группу безопасности</td></tr>
+      <tr><td><code>.sgroups</code></td><td>Покажет группы</td></tr>
+      <tr><td><code>.sgroup &lt;имя&gt;</code></td><td>Покажет или настроит выбранную группу</td></tr>
+      <tr><td><code>.sgroupadd &lt;группа&gt; &lt;пользователь&gt;</code></td><td>Добавит пользователя в группу</td></tr>
+      <tr><td><code>.sgroupdel &lt;группа&gt; &lt;пользователь&gt;</code></td><td>Уберет пользователя из группы</td></tr>
+      <tr><td><code>.delsgroup &lt;имя&gt;</code></td><td>Удалит группу</td></tr>
+      <tr><td><code>.tsec</code></td><td>Покажет точечные правила доступа</td></tr>
+      <tr><td><code>.tsecrm</code></td><td>Удалит точечное правило</td></tr>
+      <tr><td><code>.tsecclr</code></td><td>Очистит правила выбранного типа</td></tr>
+    </tbody>
+  </table></div>
+  <p>Точечное правило может выдать доступ к одной команде на время. Например, <code>.tsec user @username ping 1h</code> найдет команду ping и предложит подтвердить доступ на час. Правила бывают для команды, модуля или инлайн-команды, а целью может быть пользователь, чат или группа безопасности. Время принимается с суффиксами <code>h</code>, <code>m</code>, <code>d</code> и <code>s</code>.</p>
+
+  <h2>Инлайн-бот</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.ch_heroku_bot &lt;имя&gt;</code></td><td>Сменит имя персонального бота</td></tr>
+      <tr><td><code>.ch_bot_token &lt;токен&gt;</code></td><td>Подключит токен готового бота вместо автоматически созданного</td></tr>
+      <tr><td><code>/profile</code> в инлайн-боте</td><td>Покажет текущий префикс и кнопку сброса</td></tr>
+      <tr><td><code>/start</code> в инлайн-боте</td><td>Покажет служебное меню бота</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Конфигуратор и аккаунты</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.config</code></td><td>Откроет меню настроек модулей и библиотек</td></tr>
+      <tr><td><code>.cfg &lt;модуль&gt; &lt;опция&gt; &lt;значение&gt;</code></td><td>Задаст значение напрямую. Можно соединять изменения через <code>&amp;&amp;</code></td></tr>
+      <tr><td><code>.fcfg</code></td><td>Алиас <code>.cfg</code> на master</td></tr>
+      <tr><td><code>.addacc &lt;пользователь&gt;</code></td><td>Начнет вход в ещё один Telegram-аккаунт через инлайн-форму; можно указать пользователя реплаем</td></tr>
+      <tr><td><code>.switchacc</code></td><td>Запустит переключение активного аккаунта</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Защита от лимитов Telegram</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.api_fw_protection</code></td><td>Включит или выключит ограничитель частоты API-запросов</td></tr>
+      <tr><td><code>.suspend_api_protect &lt;секунды&gt;</code></td><td>Временно приостановит ограничитель</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="cmd-presets">Пресеты, только на master</h2>
+  <p>В dev модуль пресетов удален. На master доступны:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>.presets</code></td><td>Покажет наборы модулей для установки</td></tr>
+      <tr><td><code>.loadpreset</code> (<code>.lp</code>)</td><td>Загрузит пресет из файла или реплая</td></tr>
+      <tr><td><code>.addtofolder</code> (<code>.af</code>)</td><td>Добавит модуль в свою папку</td></tr>
+      <tr><td><code>.folderload</code> (<code>.fl</code>)</td><td>Отправит папку как файл пресета</td></tr>
+      <tr><td><code>.removefromfolder</code> (<code>.rff</code>)</td><td>Уберет модуль из папки</td></tr>
+      <tr><td><code>.loadaliases</code> (<code>.la</code>)</td><td>Загрузит алиасы из файла</td></tr>
+      <tr><td><code>.aliasload</code> (<code>.al</code>)</td><td>Отправит алиасы файлом</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>Полный список конкретного модуля всегда доступен командой <code>.help ИмяМодуля</code>. Эта справка относится только к ядру, модуль из каталога может добавлять сколько угодно своих команд.</p>
+  <div class="pgr"><a href="#daily">← Повседневные задачи</a><a href="#inline">Инлайн и права →</a></div>
+</section>
+
+<section id="inline">
+  <h1>Инлайн-бот и права</h1>
+  <p class="lead">Инлайн-бот обслуживает формы и кнопки. Система прав решает, кто может запускать команды и нажимать эти кнопки.</p>
+
+  <h2>Зачем отдельный бот</h2>
+  <p>Обычные команды отправляет твой аккаунт, но Telegram требует отдельного бота для инлайн-форм. Поэтому при установке Heroku настраивает его через @BotFather. Через него работают меню <code>.config</code>, подтверждения, галереи и страницы списков.</p>
+  <p>Сообщение <code>/profile</code> этому боту показывает префикс и кнопки перезапуска и сброса префикса. Команды <code>.ch_heroku_bot</code> и <code>.ch_bot_token</code> меняют его имя и токен. Токен, как и сессию, не отправляй посторонним.</p>
+
+  <h2>Кому доступны команды</h2>
+  <p>Исходящие команды владельца проходят проверку прав. Чужим пользователям доступ по умолчанию не выдается. При необходимости открой <code>.security</code> для общего ограничения прав или <code>.security имя_команды</code> для отдельной команды. Для инлайн-команды есть <code>.inlinesec</code>, а <code>.querysec</code> переключает доступ посторонних к инлайн-запросам.</p>
+
+  <h2>Точечное разрешение</h2>
+  <p><code>.tsec user @username ping 1h</code> предложит выдать пользователю команду ping на час. Можно выдавать доступ к целому модулю или инлайн-команде, а целью делать пользователя, чат либо группу безопасности. Посмотреть действующие правила поможет <code>.tsec</code> без аргументов.</p>
+
+  <h2>Чёрные списки и ватчеры</h2>
+  <p>Команда <code>.blacklist</code> ограничит работу в чате, <code>.unblacklist</code> вернёт её. <code>.blacklistuser</code> запретит пользователю доступные ему команды. Если мешает фоновая реакция конкретного модуля на сообщения, <code>.watcherbl</code> выключит её в текущем чате, не удаляя модуль.</p>
+
+  <blockquote class="red"><span class="bt">Совладение</span><p><code>.owneradd</code> даёт широкие права. Для доступа друга к паре команд начни с <code>.tsec</code> или настрой права этих команд отдельно.</p></blockquote>
+  <div class="pgr"><a href="#cmds">← Команды</a><a href="#r">.e и объект r →</a></div>
+</section>
+
+<section id="r">
+  <h1><code>.e</code>: Python прямо в чате</h1>
+  <p class="lead"><code>.e</code> это Python-консоль в Telegram. Написали выражение, Heroku выполнила его и вернула результат сообщением. Код исполняется настоящим интерпретатором Python.</p>
+
+  <h2>Как работает .e</h2>
+  <p>Heroku передает ваш код библиотеке <code>meval</code>, которая вычисляет Python-выражение внутри уже работающего процесса юзербота. Поэтому код видит Telegram-клиент, сообщение-команду, реплай, базу и функции Heroku. Не надо импортировать их вручную.</p>
+  <p>Пишите команду, после неё обычный Python. Значение выражения выводится автоматически. <code>print()</code> тоже перехватывается и показывается отдельно. Можно использовать <code>await</code> прямо в строке, например для запроса к Telegram.</p>
+  <div class="codetop"><span>примеры в Избранном</span></div>
+  <pre><code>.e 2 + 2
+.e "hello".upper()
+.e await client.get_me()
+.e print("строка вывода")
+.e await message.edit("готово")</code></pre>
+  <p>Первая команда вернет 4. Вторая строку HELLO. Третья запросит профиль текущего аккаунта. Четвертая покажет напечатанный текст. Последняя отредактирует ваше сообщение-команду.</p>
+
+  <blockquote class="red">
+    <span class="bt">Важно: это не песочница</span>
+    <p>Код в <code>.e</code> исполняется внутри Heroku с правами процесса. Он может отправлять сообщения, читать базу и обращаться к файлам сервера. Не запускайте код от незнакомых людей, даже если он выглядит как пара безобидных строк.</p>
+  </blockquote>
+
+  <h2>Что уже доступно в коде</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Имя</th><th>Что внутри</th><th>Пример</th></tr></thead>
+    <tbody>
+      <tr><td><code>message</code>, <code>m</code>, <code>event</code></td><td>Ваше сообщение с командой</td><td><code>message.text</code></td></tr>
+      <tr><td><code>r</code>, <code>reply</code></td><td>Сообщение, на которое вы ответили</td><td><code>r.text</code></td></tr>
+      <tr><td><code>client</code>, <code>c</code></td><td>Подключенный Telegram-клиент</td><td><code>await c.get_me()</code></td></tr>
+      <tr><td><code>chat</code></td><td>Адресат сообщения команды (<code>message.to_id</code>), не объект чата с названием и участниками</td><td><code>chat</code></td></tr>
+      <tr><td><code>utils</code></td><td>Утилиты Heroku</td><td><code>utils.get_chat_id(message)</code></td></tr>
+      <tr><td><code>db</code></td><td>База данных</td><td><code>db.get("MyMod", "key")</code></td></tr>
+      <tr><td><code>lookup</code></td><td>Найти загруженный модуль</td><td><code>lookup("LoaderMod")</code></td></tr>
+      <tr><td><code>self</code></td><td>Сам модуль Evaluator</td><td><code>self.get("key")</code></td></tr>
+      <tr><td><code>herokutl</code>, <code>telethon</code>, <code>hikkatl</code></td><td>Клиентская библиотека, три имени на один пакет</td><td><code>herokutl</code></td></tr>
+      <tr><td><code>SendMessageRequest</code> и другие TL-имена</td><td>Функции и типы Telegram доступны прямо по имени</td><td><code>SendMessageRequest</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>В окружении также есть <code>loader</code> и <code>main</code>. Модуль <code>herokutl.tl.functions</code> и <code>herokutl.tl.types</code> загружаются в пространство имен рекурсивно, поэтому для многих запросов не нужен import.</p>
+
+  <h2>Что такое r</h2>
+  <p><code>r</code> и <code>reply</code> указывают на одно и то же сообщение, если ты отправил <code>.e</code> реплаем. Heroku получает его через <code>await message.get_reply_message()</code>. Если реплая нет, оба имени равны <code>None</code>; обращение к <code>r.text</code> тогда даст ошибку. Для свойств не нужен <code>await</code>: пиши <code>r.sender_id</code>, но метод вызывай как <code>await r.get_sender()</code>.</p>
+  <p>Ниже свойства и публичные методы объекта <code>Message</code> из установленной с master библиотеки herokutl 2.1.0. На dev используется herokutl 2.2.0.dev2, у неё есть дополнительные возможности для RichText. Примеры с медиа и файлами рассчитаны на сообщение, где вложение действительно есть.</p>
+  <div class="subnav" aria-label="Подразделы объекта r"><a href="#r-fields">Текст и чат</a><a href="#r-media">Медиа</a><a href="#r-actions">Методы</a><a href="#r-examples">Примеры</a></div>
+
+  <h2 id="r-fields">Текст, автор и чат</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Свойство r</th><th>Что возвращает</th></tr></thead>
+    <tbody>
+      <tr><td><code>text</code></td><td>Текст, восстановленный с форматированием в режиме клиента; в Heroku это обычно HTML</td></tr>
+      <tr><td><code>raw_text</code>, <code>message</code></td><td>Исходный текст без вставленных тегов. У служебного сообщения может быть <code>None</code></td></tr>
+      <tr><td><code>entities</code></td><td>Объекты разметки: жирный текст, ссылки, код и другие</td></tr>
+      <tr><td><code>id</code></td><td>Номер сообщения. <code>r.message_id</code> не используй: у этого класса подтверждено поле <code>id</code></td></tr>
+      <tr><td><code>date</code>, <code>edit_date</code></td><td>Дата отправки и, если сообщение редактировали, дата правки</td></tr>
+      <tr><td><code>sender_id</code>, <code>sender</code></td><td>Id отправителя и его объект, если он уже загружен</td></tr>
+      <tr><td><code>input_sender</code>, <code>from_id</code></td><td>Адресат для Telegram API и сырой объект отправителя. Для анонимного сообщения могут отсутствовать</td></tr>
+      <tr><td><code>chat_id</code>, <code>chat</code></td><td>Числовой id чата и объект чата, если он есть в кеше</td></tr>
+      <tr><td><code>input_chat</code>, <code>peer_id</code>, <code>to_id</code></td><td>Варианты адресата для запросов к Telegram. Это не название чата</td></tr>
+      <tr><td><code>is_private</code>, <code>is_group</code>, <code>is_channel</code></td><td>Тип чата. Для супергруппы <code>is_group</code> и <code>is_channel</code> могут оба быть <code>True</code></td></tr>
+      <tr><td><code>out</code>, <code>post</code>, <code>mentioned</code></td><td>Исходящее ли сообщение, является ли постом канала и упоминает ли тебя</td></tr>
+      <tr><td><code>is_reply</code>, <code>reply_to_msg_id</code>, <code>reply_to</code></td><td>Ответ ли это сообщение, id исходного сообщения и сырой заголовок реплая</td></tr>
+      <tr><td><code>reply_to_chat</code>, <code>reply_to_sender</code></td><td>Чат и отправитель оригинала при ответе через границу чатов, если данные доступны</td></tr>
+    </tbody>
+  </table></div>
+  <p><code>r.sender</code> и <code>r.chat</code> читают уже известные данные и могут быть пустыми. Если объект нужен для дальнейшей работы, попробуй <code>await r.get_sender()</code> или <code>await r.get_chat()</code>: эти методы при необходимости запросят данные у Telegram, но тоже могут вернуть <code>None</code>. Один только id проще брать из <code>r.sender_id</code> или <code>r.chat_id</code>.</p>
+
+  <h2 id="r-media">Медиа, файл и кнопки</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Свойство r</th><th>Что возвращает</th></tr></thead>
+    <tbody>
+      <tr><td><code>media</code>, <code>file</code></td><td>Сырой объект вложения и удобную обёртку для фото или документа. Для опроса либо сообщения без файла <code>file</code> будет <code>None</code></td></tr>
+      <tr><td><code>photo</code>, <code>document</code></td><td>Фото или документ Telegram, если он есть</td></tr>
+      <tr><td><code>video</code>, <code>video_note</code>, <code>gif</code></td><td>Видео, кружок или анимацию. Каждый вариант определяется атрибутами документа</td></tr>
+      <tr><td><code>audio</code>, <code>voice</code>, <code>sticker</code></td><td>Аудиофайл, голосовое или стикер</td></tr>
+      <tr><td><code>web_preview</code>, <code>contact</code>, <code>geo</code></td><td>Превью сайта, карточку контакта либо координаты</td></tr>
+      <tr><td><code>venue</code>, <code>poll</code>, <code>dice</code>, <code>game</code>, <code>invoice</code></td><td>Место, опрос, кубик, игру или счёт</td></tr>
+      <tr><td><code>buttons</code>, <code>button_count</code>, <code>reply_markup</code></td><td>Кнопки по рядам, их количество и сырой объект разметки. <code>buttons</code> может быть <code>None</code></td></tr>
+      <tr><td><code>media_unread</code>, <code>grouped_id</code></td><td>Статус прочтения медиа и id альбома, если сообщение входит в альбом</td></tr>
+      <tr><td><code>via_input_bot</code>, <code>via_bot_id</code></td><td>Адресат инлайн-бота для API и его числовой id, если сообщение отправлено через бота</td></tr>
+    </tbody>
+  </table></div>
+  <p>Если <code>r.file</code> существует, у него доступны <code>name</code>, <code>ext</code>, <code>mime_type</code>, <code>size</code>, <code>width</code>, <code>height</code>, <code>duration</code>, <code>title</code>, <code>performer</code>, <code>emoji</code>, <code>sticker_set</code> и <code>id</code>. Не все атрибуты подходят каждому типу файла: у картинки не будет названия песни.</p>
+  <div class="codetop"><span>в ответ на сообщение с файлом</span></div>
+  <pre><code>.e r.file.name if r.file else "Файла нет"
+.e r.file.size if r.file else None
+.e bool(r.voice)
+.e r.button_count</code></pre>
+
+  <h2>Пересылка, реакции и служебные поля</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Свойство r</th><th>Что означает</th></tr></thead>
+    <tbody>
+      <tr><td><code>forward</code>, <code>fwd_from</code></td><td>Удобная обёртка и сырой заголовок пересланного сообщения</td></tr>
+      <tr><td><code>views</code>, <code>forwards</code>, <code>replies</code></td><td>Просмотры, число пересылок и данные об ответах, если Telegram их прислал</td></tr>
+      <tr><td><code>reactions</code>, <code>pinned</code></td><td>Реакции и статус закрепления</td></tr>
+      <tr><td><code>via_bot_id</code>, <code>via_bot</code></td><td>Через какого бота отправлено сообщение, если оно инлайновое</td></tr>
+      <tr><td><code>post_author</code>, <code>silent</code>, <code>noforwards</code></td><td>Подпись автора поста, тихая отправка и запрет пересылки</td></tr>
+      <tr><td><code>action</code>, <code>action_entities</code></td><td>Действие служебного сообщения, например изменение состава чата, и связанные участники</td></tr>
+      <tr><td><code>ttl_period</code>, <code>restriction_reason</code></td><td>Время автоудаления и причины ограничения, если заданы</td></tr>
+      <tr><td><code>client</code></td><td>Клиент Telegram, которым получено сообщение</td></tr>
+    </tbody>
+  </table></div>
+  <p>В Message есть и другие сырые поля Telegram: <code>saved_peer_id</code>, <code>from_scheduled</code>, <code>legacy</code>, <code>edit_hide</code>, <code>invert_media</code>, <code>offline</code>, <code>from_rank</code>, <code>effect</code>, <code>factcheck</code>, <code>suggested_post</code> и <code>rich_message</code>. Есть также <code>video_processing_pending</code>, <code>quick_reply_shortcut_id</code>, <code>paid_message_stars</code> и поля пересланных бизнес-сообщений. Они появляются только в подходящих типах сообщений и зависят от версии herokutl. Для повседневных команд обычно хватает свойств из таблиц выше.</p>
+
+  <h2 id="r-actions">Методы r</h2>
+  <p>Методы ниже асинхронные, поэтому в <code>.e</code> перед ними нужен <code>await</code>. Исключение в этом списке одно: <code>get_entities_text()</code> вызывается без <code>await</code>.</p>
+  <p>У <code>click</code> можно указать <code>i</code>, <code>j</code>, <code>text</code>, <code>filter</code> или <code>data</code>; для кнопок запроса контакта, геолокации и 2FA предусмотрены <code>share_phone</code>, <code>share_geo</code> и <code>password</code>. У <code>pin</code> есть <code>notify</code> и <code>pm_oneside</code>, у <code>react</code> есть <code>big</code>, <code>add_to_recent</code>, <code>keep_existing</code>, а у <code>link</code> есть <code>grouped</code> и <code>thread</code>. Это параметры методов Message, а не отдельные команды Heroku.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Метод</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td><code>get_sender()</code>, <code>get_input_sender()</code></td><td>Получают отправителя или пригодный для API адресат. Могут обратиться к Telegram, если данных нет в кеше</td></tr>
+      <tr><td><code>get_chat()</code>, <code>get_input_chat()</code></td><td>Получают чат либо адресат для запросов к нему</td></tr>
+      <tr><td><code>get_reply_message()</code></td><td>Возвращает сообщение, на которое отвечает сам <code>r</code>, если оно доступно</td></tr>
+      <tr><td><code>respond("текст")</code>, <code>reply("текст")</code></td><td>Отправляют сообщение в тот же чат; <code>reply</code> создаёт реплай на <code>r</code></td></tr>
+      <tr><td><code>forward_to("me")</code></td><td>Пересылает сообщение в Избранное</td></tr>
+      <tr><td><code>edit("текст")</code>, <code>delete()</code></td><td>Редактируют или удаляют при наличии прав. Чужое сообщение просто так не отредактировать</td></tr>
+      <tr><td><code>download_media()</code></td><td>Скачивает вложение на машину, где работает Heroku. Без вложения результата может не быть</td></tr>
+      <tr><td><code>get_buttons()</code></td><td>Получает кнопки, если свойство <code>buttons</code> не смогло собрать их из кеша</td></tr>
+      <tr><td><code>click(0)</code>, <code>click(text="Да")</code></td><td>Нажимает кнопку или голосует в опросе. Позиции начинаются с нуля; можно указать строку и колонку <code>click(0, 1)</code></td></tr>
+      <tr><td><code>mark_read()</code></td><td>Отмечает сообщение прочитанным</td></tr>
+      <tr><td><code>pin()</code>, <code>unpin()</code></td><td>Закрепляет или открепляет сообщение при наличии прав</td></tr>
+      <tr><td><code>react("👍")</code></td><td>Отправляет реакцию, если она разрешена в чате</td></tr>
+      <tr><td><code>link()</code></td><td>Получает ссылку на сообщение с учётом типа чата</td></tr>
+      <tr><td><code>translate("en")</code></td><td>Возвращает перевод сообщения на указанный язык через метод клиента; доступность зависит от Telegram и типа сообщения</td></tr>
+      <tr><td><code>get_entities_text()</code></td><td>Без <code>await</code> возвращает пары «объект разметки, соответствующий текст»</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 id="r-examples">Примеры .e и ловушки</h2>
+  <div class="codetop"><span>пиши реплаем на нужное сообщение</span></div>
+  <pre><code>.e len(r.raw_text or "")
+.e len((r.raw_text or "").split())
+.e (await r.get_sender()).first_name
+.e await r.reply("Получил")
+.e await r.forward_to("me")
+.e await r.link()
+.e await r.react("👍")
+.e await r.download_media()
+.e r.file.name if r.file else "Вложения нет"</code></pre>
+  <p><code>r.raw_text</code> может быть <code>None</code>, поэтому в подсчёте стоит <code>or ""</code>. <code>r.file.name</code> вызовет ошибку, если файла нет. <code>r.sender</code> бывает не загружен: для имени попробуй <code>await r.get_sender()</code>. Если Telegram не вернул отправителя, проверяй результат на <code>None</code>. Методы изменения чужих сообщений ограничены правами Telegram.</p>
+  <p>Кнопки через <code>r.click(...)</code> нажимай только на доверенных сообщениях. Некоторые кнопки запрашивают телефон, геолокацию или пароль 2FA; для них API требует явно указать соответствующие аргументы. Обычный клик можно выбрать по индексу <code>click(0)</code> или точному тексту <code>click(text="Да")</code>.</p>
+  <p>Если написать просто <code>.e</code> реплаем на сообщение, содержащее код, Evaluator попробует исполнить текст реплая. Проверь, что там написано, до запуска.</p>
+
+  <h2>Вывод, ошибки и флаги</h2>
+  <ul>
+    <li>Результат последнего выражения показывается автоматически</li>
+    <li>Текст из <code>print()</code> перехватывается, после результата показывается время исполнения</li>
+    <li>При ошибке Heroku присылает traceback, смотри последнюю строку, там обычно причина</li>
+    <li>Номер телефона, строка сессии, токены и адреса баз маскируются в выводе. Это страховка от случайного показа, а не повод выводить секреты</li>
+    <li><code>db.set("heroku.security", "owner", ...)</code> блокируется защитой Evaluator</li>
+  </ul>
+  <p>Флаг <code>-so</code> исполняет код без ответа:</p>
+  <pre><code>.e -so await r.delete()</code></pre>
+
+  <h2>Если нужен не Python</h2>
+  <p><code>.ecpp</code> запускает C++ через g++, <code>.ec</code> C через gcc, <code>.ers</code> Rust через rustc, <code>.eg</code> Go через go, <code>.enode</code> JavaScript через node. Эти компиляторы должны быть установлены отдельно. Можно передать код после команды или ответить командой на сообщение с кодом.</p>
+
+  <div class="pgr"><a href="#inline">← Инлайн и права</a><a href="#module">Свой модуль →</a></div>
+</section>
+
+<section id="module">
+  <h1>Свой модуль</h1>
+  <p class="lead">Модуль это Python-файл с классом-наследником <code>loader.Module</code>. Отправляешь файл в Telegram и отвечаешь на него <code>.loadmod</code>. Перезапускать Heroku обычно не приходится.</p>
+
+  <h2>Минимальный пример</h2>
+  <div class="codetop"><span>hello.py</span></div>
+  <pre><code>from heroku import loader, utils
+
+
+@loader.tds
+class HelloMod(loader.Module):
+    """Отвечает приветствием"""
+
+    strings = {"name": "Hello"}
+
+    @loader.command()
+    async def hello(self, message):
+        """Поздороваться"""
+        await utils.answer(message, "Привет")</code></pre>
+  <p>В <code>.help</code> появится модуль Hello и команда <code>.hello</code>. Строка в тройных кавычках под методом служит описанием команды. Другой способ регистрации: назвать метод <code>hellocmd</code>, тогда суффикс <code>cmd</code> будет отброшен.</p>
+
+  <h2>Работа с сообщениями</h2>
+  <p>В <code>message</code> приходит само сообщение с командой. <code>utils.get_args_raw(message)</code> вернет весь текст после команды, а <code>utils.get_args(message)</code> разобьет аргументы на слова. Реплай получаешь через <code>await message.get_reply_message()</code>.</p>
+  <div class="codetop"><span>фрагмент модуля</span></div>
+  <pre><code>@loader.command()
+async def wordscmd(self, message):
+    """Посчитать слова в реплае"""
+    reply = await message.get_reply_message()
+    if not reply:
+        await utils.answer(message, "Ответь на текстовое сообщение")
+        return
+    await utils.answer(message, str(len((reply.raw_text or "").split())))</code></pre>
+  <p>Имя метода <code>wordscmd</code> дает команду <code>.words</code>. Это удобно, если ты привык к старым модулям Hikka.</p>
+
+  <h2>Настройки и сохранение данных</h2>
+  <p>Если пользователю надо менять параметр через <code>.config</code>, объяви его в конструкторе:</p>
+  <div class="codetop"><span>фрагмент модуля</span></div>
+  <pre><code>def __init__(self):
+    self.config = loader.ModuleConfig(
+        loader.ConfigValue(
+            "greeting", "Привет", "Текст ответа",
+            validator=loader.validators.String(),
+        ),
+    )</code></pre>
+  <p>Читается как <code>self.config["greeting"]</code>. Валидаторы проверяют тип: есть <code>Boolean</code>, <code>Integer</code>, <code>Float</code>, <code>Choice</code>, <code>Series</code>, <code>Link</code> и другие. Если нужно просто запомнить значение для самого модуля, есть <code>self.set("ключ", значение)</code> и <code>self.get("ключ", значение_по_умолчанию)</code>. Эти данные переживают перезапуск.</p>
+
+  <h2>Ватчер и фоновый цикл</h2>
+  <p>Команда срабатывает по запросу владельца. Ватчер вызывается при сообщениях и может реагировать сам. Теги отбирают нужные события:</p>
+  <div class="codetop"><span>фрагмент модуля</span></div>
+  <pre><code>@loader.watcher("in", "only_messages", "no_commands")
+async def watcher(self, message):
+    if "привет" in (message.raw_text or "").lower():
+        await message.reply("Привет")
+
+@loader.loop(interval=300, autostart=True)
+async def ticker(self):
+    await self.client.send_message("me", "Прошло пять минут")</code></pre>
+  <p><code>in</code> оставляет входящие сообщения, <code>only_messages</code> убирает служебные события, <code>no_commands</code> исключает команды юзербота. <code>loader.loop</code> запускает метод по интервалу в секундах. Не стоит делать ватчер, который отвечает на каждое сообщение без ограничений: так недолго поймать FloodWait.</p>
+
+  <h2>Меню на кнопках</h2>
+  <p>Их отправляет персональный инлайн-бот, который создается при первом входе:</p>
+  <div class="codetop"><span>фрагмент модуля</span></div>
+  <pre><code>async def pressed(self, call):
+    await call.answer("Готово")
+    await call.edit("Кнопка сработала")
+
+@loader.command()
+async def menucmd(self, message):
+    """Открыть меню"""
+    await self.inline.form(
+        text="Меню",
+        message=message,
+        reply_markup=[
+            {"text": "Нажать", "callback": self.pressed},
+            {"text": "Закрыть", "action": "close"},
+        ],
+    )</code></pre>
+  <p>Колбэк получает <code>call</code>. Через него можно ответить на нажатие, изменить сообщение, удалить или выгрузить форму. У кнопок бывают <code>callback</code>, <code>url</code>, <code>input</code> и готовые действия вроде <code>close</code>.</p>
+
+  <h2>Когда клиент готов</h2>
+  <p>В <code>client_ready</code> можно делать запросы к Telegram. <code>config_complete</code> вызывается после загрузки конфигурации, <code>on_unload</code> при выгрузке, <code>on_dlmod</code> при первой установке файла. Если в <code>client_ready</code> бросить <code>loader.LoadError("причина")</code>, пользователь увидит причину отказа. <code>loader.SelfSuspend</code> оставит модуль в базе, но не зарегистрирует команды до следующего старта.</p>
+  <div class="codetop"><span>фрагмент модуля</span></div>
+  <pre><code>async def client_ready(self):
+    self.me = await self.client.get_me()</code></pre>
+
+  <h2>Что уже есть на self</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Имя</th><th>Для чего</th></tr></thead>
+    <tbody>
+      <tr><td><code>self.client</code></td><td>Telegram-клиент</td></tr>
+      <tr><td><code>self.db</code></td><td>База данных всех модулей</td></tr>
+      <tr><td><code>self.get</code>, <code>self.set</code>, <code>self.pointer</code></td><td>Данные этого модуля; pointer автоматически сохраняет изменения списка и словаря</td></tr>
+      <tr><td><code>self.inline</code></td><td>Формы, списки и галереи</td></tr>
+      <tr><td><code>self.lookup("Имя")</code></td><td>Другой загруженный модуль</td></tr>
+      <tr><td><code>self.tg_id</code></td><td>Telegram id текущего аккаунта</td></tr>
+      <tr><td><code>self.get_prefix()</code></td><td>Текущий префикс команд</td></tr>
+      <tr><td><code>self.import_lib(url)</code></td><td>Загрузить внешнюю библиотеку с классом <code>loader.Library</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Шапка файла и совместимость</h2>
+  <p>Загрузчик читает несколько строк в начале модуля. Например:</p>
+  <div class="codetop"><span>начало файла</span></div>
+  <pre><code># meta developer: @username
+# requires: requests
+# scope: heroku_min 2.1.0
+
+__version__ = (1, 0, 0)</code></pre>
+  <p>Автор попадет в справку, пакет из <code>requires</code> загрузчик попробует поставить через pip, а <code>heroku_min</code> не даст поставить модуль на старое ядро. Импорты <code>telethon</code>, <code>hikkatl</code> и <code>hikka</code> внутри сторонних модулей Heroku перенаправляет на herokutl и heroku. Поэтому старые модули часто работают без правок, хотя проверять всё равно стоит.</p>
+  <p>Рабочие примеры находятся в папке <code>heroku/modules/</code>. Начни с <code>translate.py</code> и <code>test.py</code>: там хорошо видно, как команда получает сообщение и как отвечает.</p>
+  <h2>Если одной страницы мало</h2>
+  <p><code>loader.Module</code> даёт доступ к Telegram-клиенту, базе и инлайн-менеджеру. Для списков и галерей есть <code>self.inline.list(...)</code> и <code>self.inline.gallery(...)</code>, для перевода строк интерфейса модуль может задать <code>strings_ru</code>. Внешние общие библиотеки подключаются через <code>self.import_lib(url)</code>, библиотечный класс наследует <code>loader.Library</code> и оканчивается на <code>Lib</code>. Удобные методы вроде <code>utils.escape_html</code> и <code>utils.get_chat_id</code> лежат в <code>heroku/utils/</code>. Подписи аргументов и примеры вызывающих модулей смотри в исходниках той же ветки, на которой запускаешь свой код.</p>
+  <div class="pgr"><a href="#r">← .e и объект r</a><a href="#beta">Beta →</a></div>
+</section>
+
+<section id="beta">
+  <h1>Beta</h1>
+  <p class="lead">Тестовая ветка следующей версии. На момент проверки <code>origin/beta</code> и <code>origin/dev</code> указывали на один и тот же коммит <code>dba41c58</code>. Разницы в коде между ними сейчас нет.</p>
+
+  <h2>Для чего она существует</h2>
+  <p>На beta попадают изменения до выхода в master. Сейчас возможности и проблемы у нее те же, что на dev. Смысл beta для пользователя в том, чтобы проверить следующий релиз заранее, пока он еще не стал стабильным.</p>
+
+  <div class="pc">
+    <div class="plus"><h4>Плюсы beta</h4><ul>
+      <li>Новые возможности раньше master</li>
+      <li>Исправления некоторых багов, которые еще не доехали до стабильной версии</li>
+      <li>Можно проверить свои модули перед следующим релизом</li>
+    </ul></div>
+    <div class="minus"><h4>Минусы beta</h4><ul>
+      <li>Проверка списка тестеров при запуске и попытка сброса на master без допуска</li>
+      <li>Новые изменения могут сломать старый модуль</li>
+      <li>Временные зависимости, например <code>herokutl==2.2.0.dev2</code></li>
+      <li>Некоторых команд master больше нет</li>
+    </ul></div>
+  </div>
+
+  <h2>Можно ли просто поставить</h2>
+  <p>Для dev и beta предусмотрена проверка списка тестеров. При запуске код получает список id из <code>coddrago/modules-web</code>. Если id нет в списке и текущая сборка не входит в историю origin/master, функция пытается сбросить ветку на master и перезапустить Heroku.</p>
+
+  <blockquote class="red">
+    <span class="bt">В коде есть ошибка</span>
+    <p>После сброса функция пытается вызвать <code>self.client.log_out()</code>, но объект запуска не создает <code>self.client</code>. Исключение перехватывается. Поэтому в изученном коммите разлогин не гарантирован, а вот откат рабочей папки и перезапуск могут произойти. Перед экспериментами сделай резервную копию своих изменений.</p>
+  </blockquote>
+
+  <h2>Установка beta</h2>
+  <p>В новой копии репозитория после клонирования выбери ветку. Это инструкция для аккаунтов с доступом к тестированию:</p>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>git clone https://github.com/coddrago/Heroku
+cd Heroku
+git checkout beta
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python3 -m heroku</code></pre>
+  <p>На существующей установке останавливаешь Heroku, переходишь в ее папку и выполняешь <code>git fetch origin</code>, <code>git checkout beta</code>, затем <code>source .venv/bin/activate</code> и <code>pip install -r requirements.txt</code>. База и модули остаются, но заранее сделай <code>.backupall</code>.</p>
+
+  <h2>Что именно получишь</h2>
+  <p>Сейчас тот же набор функций, что и на dev: RichText, несколько префиксов, кеш модулей, отдельные логи по аккаунтам, улучшенную защиту сессий и файлов. Полный список изменений с примерами и оговорками в <a href="#devb">разделе dev</a>. Здесь не дублирую одну и ту же таблицу второй раз, потому что ветки на момент проверки совпадали побайтово.</p>
+
+  <div class="pgr"><a href="#module">← Свой модуль</a><a href="#devb">Ветка dev →</a></div>
+</section>
+
+<section id="devb">
+  <h1>Ветка dev</h1>
+  <p class="lead">Ветка разработки. В изученном коммите версия 2.2.2, зависимость herokutl 2.2.0.dev2. Ветка beta сейчас указывает на тот же код; деление на «разработку» и «тестирование» здесь объясняет, зачем обычно выбирают эти имена, а не техническую разницу между ветками.</p>
+
+  <h2>Кому какую ветку брать</h2>
+  <div class="tw"><table>
+    <thead><tr><th>Ветка</th><th>Кому подойдет</th><th>Главный компромисс</th></tr></thead>
+    <tbody>
+      <tr><td><code>master</code>, 2.1.0</td><td>Хочешь просто пользоваться каждый день</td><td>Нет новых функций, пока не вышел релиз</td></tr>
+      <tr><td><code>beta</code>, 2.2.2</td><td>Есть доступ к тесту, хочешь проверить следующий релиз</td><td>Изменения могут ломать привычное поведение</td></tr>
+      <tr><td><code>dev</code>, 2.2.2</td><td>Пишешь модули или следишь за разработкой</td><td>Сейчас тот же код, что в beta; будущие коммиты могут разойтись</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="pc">
+    <div class="plus"><h4>Плюсы dev</h4><ul>
+      <li>RichText в сообщениях и формах</li>
+      <li>Несколько префиксов и личные префиксы для совладельцев</li>
+      <li>Защита секретов в логах и приватности служебного канала заметно лучше</li>
+      <li>Удобнее работать с несколькими аккаунтами и логами модулей</li>
+    </ul></div>
+    <div class="minus"><h4>Минусы dev</h4><ul>
+      <li>Без допуска бета-тестера ветка может откатиться на master и перезапуститься</li>
+      <li>Временная версия herokutl, которую могут менять вместе с ядром</li>
+      <li>Пресеты удалены, часть старых команд исчезла</li>
+      <li>Новые функции модулей могут не работать на master</li>
+    </ul></div>
+  </div>
+
+  <h2>Что изменилось в использовании</h2>
+  <h3>Несколько префиксов</h3>
+  <p>На master у владельца один префикс. На dev можно задать несколько, первым будет основной:</p>
+  <div class="codetop"><span>в Telegram</span></div>
+  <pre><code>.setprefix . ! ?</code></pre>
+  <p>После этого понимаются команды с точкой, восклицательным и вопросительным знаком. Есть и персональные префиксы для пользователей, которым ты уже выдал права, например через <code>.setprefix --user 123456789 !</code>. По умолчанию длинные префиксы по-прежнему требуют настройки <code>allow_nonstandart_prefixes</code>.</p>
+
+  <h3>Одинаковые команды в разных модулях</h3>
+  <p>Если два модуля предлагают одну команду, загрузчик больше не перезаписывает ее молча. Показывается выбор, чью версию команды оставить. Особенно полезно, когда ставишь несколько модулей для одной и той же задачи.</p>
+
+  <h3>Кеш и обновление модулей</h3>
+  <p>Загруженные модули кешируются локально, чтобы не качать их повторно без нужды. Для изменения обычного стороннего модуля загрузчик предлагает обновление, если ты не разрешил всегда обновлять этот URL. Встроенные обновления и URL из списка <code>always_update_modules</code> идут без нового подтверждения. Если вручную редактируешь кеш или скачанный файл, придется следить, откуда загрузчик берет следующую копию.</p>
+
+  <h3>RichText</h3>
+  <p>В карточке <code>.ping</code>, справке, информации о боте и переводе поддерживаются новые богатые сообщения Telegram. В <code>.config</code> некоторых модулей появился <code>rich_mode</code>. Модули могут отправлять форму через <code>self.inline.form(..., rich_message=...)</code> и менять ее через <code>InlineMessage.edit(rich_message=...)</code>. Если клиент или чат не поддерживает формат, код пытается перейти на обычный текст с медиа.</p>
+
+  <h3>Терминал</h3>
+  <p>Пароль sudo вводится через инлайн-форму и передается процессу в stdin. Больше не надо редактировать сообщение в Избранном. Команде <code>.terminate</code> добавили короткий алиас <code>.kill</code>.</p>
+
+  <h3>Логи</h3>
+  <p>Логи теперь разделяются по аккаунтам, если Heroku работает сразу на нескольких сессиях. Команда <code>.logs</code> умеет фильтровать записи конкретного модуля. Значения из реестра секретов автоматически вырезаются из сообщения об ошибке и файла лога. Всё равно просматривай лог перед отправкой в публичный чат, цензура не может угадать каждую строку, которую придумал сторонний модуль.</p>
+
+  <h2>Что изменилось под капотом</h2>
+  <ul>
+    <li>Строка сессии, номер телефона и токены регистрируются как секреты. При форматировании лога Heroku их маскирует</li>
+    <li>Файлы базы и конфигурации записываются через временный файл с закрытыми правами 0600, каталог сессий получает права 0700; файловый лог тоже закрывается от других пользователей системы</li>
+    <li>Сервисный канал проверяется перед повторным использованием. Если он стал публичным или перестал быть вашим, бот создаст новый вместо отправки бэкапа посторонним</li>
+    <li>Для прокси через Unix-сокет нужна явная переменная <code>HEROKU_ALLOW_INSECURE_PROXY=1</code>; проверяются владелец и права сокета</li>
+    <li>Загрузчик осторожнее проверяет URL модулей, а debug-лог сырых MTProto-пакетов убран</li>
+    <li><code>loader.ConfigValue</code> регистрирует значения валидатора <code>Hidden</code> как секреты</li>
+    <li>У модуля появился <code>self.create_task(coroutine)</code>. Созданные через него фоновые задачи закрываются при выгрузке модуля</li>
+    <li>Из кода убрана телеметрия <code>_send_stats</code></li>
+    <li>Из <code>requirements.txt</code> убраны <code>aiofile</code>, <code>aiofiles</code> и <code>bs4</code></li>
+  </ul>
+
+  <h2>Что пропало и может удивить</h2>
+  <p>Модуль <code>presets.py</code> удален целиком: больше нет <code>.presets</code>, <code>.loadpreset</code>, команд папок модулей и загрузки алиасов из файла. Конфигуратор изменился внутри, но привычная <code>.cfg Модуль поле значение</code> на dev по-прежнему работает. Убрали лишь старый алиас <code>.fcfg</code>.</p>
+
+  <h2>Установка dev</h2>
+  <p>Останови Heroku, сделай бэкап, перейди в папку с репозиторием и переключи ветку:</p>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>git fetch origin
+git checkout dev
+pip install -r requirements.txt
+python3 -m heroku</code></pre>
+  <p>Если окружение не активировано, перед <code>pip</code> выполни <code>source .venv/bin/activate</code>. В Docker собери образ с <code>HEROKU_REF=dev</code>. Команда <code>.update</code> после переключения будет подтягивать коммиты своей ветки.</p>
+
+  <h2>Вернуться на master</h2>
+  <div class="codetop"><span>терминал</span></div>
+  <pre><code>git checkout master
+pip install -r requirements.txt
+python3 -m heroku</code></pre>
+  <p>База, сессии и загруженные модули лежат вне Git, поэтому переключение ветки их не удаляет. Но восстановление из полного бэкапа всегда надежнее ожиданий, особенно если экспериментировал с конфигами dev.</p>
+
+  <blockquote class="red">
+    <span class="bt">О проверке тестеров еще раз</span>
+    <p>На dev <code>version.check_branch</code> вызывается при старте. Если твой id не в разрешенном списке, программа пытается вернуть репозиторий на master и перезапуститься. Вызов выхода из аккаунта в этой версии содержит ошибку, описанную в разделе Beta. Проверка идет до загрузки обычных команд, поэтому выключить ее через Telegram нельзя.</p>
+  </blockquote>
+
+  <div class="pgr"><a href="#beta">← Beta</a><a href="#faq">Проблемы →</a></div>
+</section>
+
+<section id="faq">
+  <h1>Если что-то не работает</h1>
+  <p class="lead">Начни с терминала и <code>.logs</code>. Последняя строка ошибки обычно полезнее, чем скриншот главного меню.</p>
+
+  <details><summary>Heroku не запускается под root</summary><div class="b"><p>Работай под обычным системным пользователем. Если root нужен намеренно, запусти <code>python3 -m heroku --root</code>. Тогда сторонние модули тоже получат права root.</p></div></details>
+  <details><summary>Требуется Python 3.10 или новее</summary><div class="b"><p>Проверь <code>python3 --version</code>. Установи новую версию Python и пересоздай виртуальное окружение именно ею, например <code>python3.11 -m venv .venv</code>. Затем снова установи зависимости.</p></div></details>
+  <details><summary>Check that this is the only instance running</summary><div class="b"><p>Файл сессии занят другим процессом. Не запускай Heroku второй раз поверх уже работающей. Если используешь screen, вернись в старый сеанс через <code>screen -r heroku</code>. Путь к занятому файлу программа пишет в логе.</p></div></details>
+  <details><summary>Неверные API ID или hash</summary><div class="b"><p>Сверь оба значения на my.telegram.org. Номер и hash должны быть от одного приложения. Удали ошибочный <code>config.json</code> и запусти настройку заново. Файл сессии удалять для этого не нужно.</p></div></details>
+  <details><summary>Telegram выдал FloodWait</summary><div class="b"><p>Это лимит Telegram, не ошибка установки. В сообщении указано, сколько ждать. Не повторяй попытки входа одну за другой, так ожидание может вырасти.</p></div></details>
+  <details><summary>Сессия перестала работать</summary><div class="b"><p>Проверь в Telegram список устройств: не завершал ли ты нужный сеанс. При использовании одной и той же сессии одновременно на двух машинах Telegram также может ее отозвать. Придется войти заново.</p></div></details>
+  <details><summary>Инлайн-бот не создался</summary><div class="b"><p>У аккаунта может быть лимит ботов в @BotFather или временное ограничение на их создание. Можно выбрать готового бота через <code>.ch_heroku_bot &lt;имя&gt;</code> и <code>.ch_bot_token &lt;токен&gt;</code>. Держи токен в тайне.</p></div></details>
+  <details><summary>Команды молчат</summary><div class="b"><p>Проверь, работает ли процесс, затем отправь команду от того же аккаунта, под которым авторизована Heroku. Возможно, ты сменил префикс или внес чат в черный список. Текущий префикс показывает <code>/profile</code> у инлайн-бота.</p></div></details>
+  <details><summary>Модуль не загрузился</summary><div class="b"><p>Открой <code>.logs</code>. Там будет конкретная причина: отсутствие библиотеки, несовместимая версия Heroku, ошибка самого модуля или не настроенный инлайн-бот. Если проблема касается одного модуля, сначала отключи его, а не сбрасывай весь бот.</p></div></details>
+  <details><summary>Хочу начать с нуля</summary><div class="b"><p>Сначала сохрани нужные данные через <code>.backupall</code>. Запуск <code>python3 -m heroku -w</code> предложит удалить конфиги, сессии и установленные модули. Это полный сброс с повторным входом в Telegram. Для сброса только базы используй <code>.cleardb</code>.</p></div></details>
+
+  <h2>Куда писать за помощью</h2>
+  <p>Команда <code>.support</code> покажет ссылки на чаты проекта. Перед отправкой <code>.logs</code> посторонним прочитай файл: некоторые сторонние модули пишут в лог собственные секреты.</p>
+  <div class="pgr"><a href="#devb">← Ветка dev</a><a href="#about">В начало ↑</a></div>
+</section>
+
+</div></main>
+</div>
+
+<footer><div class="page">
+  <p>Документацию написал <a href="https://github.com/ziahka">ziahka</a>. Данные актуальны на 25 сентября 2026 года. Основа: <a href="https://github.com/coddrago/Heroku">код Heroku</a>, ветки master 2.1.0 и dev 2.2.2.</p>
+</div></footer>
+
+<script>
+(function(){
+  var secs=[].slice.call(document.querySelectorAll('section'));
+  var links=[].slice.call(document.querySelectorAll('#nav a'));
+  var ids=secs.map(function(s){return s.id});
+
+  function show(id){
+    var target=document.getElementById(id);
+    var section=target&&target.closest('section');
+    if(!section){id=ids[0];target=document.getElementById(id);section=target}
+    var item=links.find(function(a){return a.getAttribute('href')==='#'+target.id});
+    if(item&&item.closest('#nav details')&&location.hash) item.closest('details').open=true;
+    var changed=!section.classList.contains('on');
+    secs.forEach(function(s){s.classList.toggle('on',s===section)});
+    links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+target.id)});
+    document.body.classList.remove('open');
+    if(target===section){window.scrollTo(0,0)}
+    else if(changed){window.scrollTo(0,0);requestAnimationFrame(function(){requestAnimationFrame(function(){target.scrollIntoView({block:'start'})})})}
+    else{target.scrollIntoView({block:'start'})}
+  }
+  addEventListener('popstate',function(){show(location.hash.slice(1))});
+  document.body.addEventListener('click',function(e){
+    var a=e.target.closest('a[href^="#"]');
+    if(!a) return;
+    var id=a.getAttribute('href').slice(1);
+    if(!document.getElementById(id)) return;
+    e.preventDefault();
+    history.pushState(null,'','#'+id);
+    show(id);
+  });
+
+  document.querySelectorAll('.codetop').forEach(function(t){
+    var pre=t.nextElementSibling;
+    if(!pre||pre.tagName!=='PRE') return;
+    var b=document.createElement('button');
+    b.className='cp'; b.textContent='копировать';
+    b.onclick=function(){
+      navigator.clipboard.writeText(pre.innerText).then(function(){
+        b.textContent='скопировано'; b.classList.add('ok');
+        setTimeout(function(){b.textContent='копировать';b.classList.remove('ok')},1500);
+      });
+    };
+    t.appendChild(b);
+  });
+
+  function theme(t){
+    document.documentElement.setAttribute('data-theme',t);
+    try{localStorage.setItem('hh-theme',t)}catch(e){}
+  }
+  var saved='dark';
+  try{saved=localStorage.getItem('hh-theme')||'dark'}catch(e){}
+  theme(saved);
+  document.getElementById('th').onclick=function(){
+    theme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+  };
+  document.getElementById('hb').onclick=function(){document.body.classList.toggle('open')};
+  document.getElementById('scrim').onclick=function(){document.body.classList.remove('open')};
+
+  document.querySelectorAll('.langs a').forEach(function(a){
+    a.addEventListener('click',function(){
+      var current=location.hash.slice(1);
+      if(current&&document.getElementById(current)) a.href=a.getAttribute('href').split('#')[0]+'#'+encodeURIComponent(current);
+    });
+  });
+
+  show(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>
